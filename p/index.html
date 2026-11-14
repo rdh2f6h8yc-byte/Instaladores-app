@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B1F3A">
+<link rel="icon" href="/icon-192.png">
+<title>Presupuesto</title>
+<style>
+:root{--azul:#0B1F3A;--acento:#1E88E5;--gris:#5F6B7A;--claro:#EEF2F7;--fondo:#F3F6FA;--borde:#D6DEE8;--verde:#2E9D5B;--rojo:#C62828;--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--azul);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+button{font:inherit;border:0;cursor:pointer}
+header{background:var(--azul);color:#fff;padding:22px 18px 26px;border-bottom:4px solid var(--acento)}
+header .w{max-width:760px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+header h1{margin:0;font-size:30px;letter-spacing:.04em}header small{color:#B9C7DA;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+header .n{text-align:right}header .n b{display:block;font-size:15px;letter-spacing:.06em}header .n span{color:#B9C7DA;font-size:13px}
+main{max-width:760px;margin:0 auto;padding:16px 14px calc(var(--sb) + 120px)}
+.card{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:14px;margin-bottom:12px}
+.lab{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--acento);text-transform:uppercase;margin-bottom:6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.muted{color:var(--gris);font-size:13.5px;line-height:1.45}
+h2{font-size:21px;margin:6px 2px 12px}
+.fila{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--claro)}
+.fila:first-child{border-top:0}.fila b{display:block;font-size:14.5px}.fila small{color:var(--gris);font-size:12.5px}
+.fila .imp{text-align:right;white-space:nowrap}.fila .imp small{display:block}
+.total{background:var(--acento);color:#fff;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:18px}
+.desg{text-align:right;color:var(--gris);font-size:12.5px;margin-top:6px}
+ul{margin:0;padding-left:18px}li{margin:3px 0}
+.plano{width:100%;border-radius:10px;border:1px solid var(--borde);margin-top:8px}
+.barra{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--borde);padding:12px 14px calc(var(--sb) + 12px);box-shadow:0 -6px 20px rgba(11,31,58,.08)}
+.barra .w{max-width:760px;margin:0 auto;display:flex;gap:10px}
+.btn{flex:1;padding:15px;border-radius:12px;font-weight:800;font-size:16px;background:var(--claro);color:var(--azul)}
+.btn.si{background:var(--verde);color:#fff;flex:2}
+.estado{border-radius:14px;padding:16px;margin-bottom:12px;font-size:15px;line-height:1.45}
+.estado.ok{background:#E3F4EA;border:1px solid #BFE3CC}.estado.no{background:#FDECEC;border:1px solid #F3C6C6}.estado.av{background:#FFF8EC;border:1px solid #F5D9AE}
+.velo{position:fixed;inset:0;background:rgba(11,31,58,.5);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.velo.on{display:flex}
+.hoja{background:#fff;width:100%;max-width:640px;border-radius:18px 18px 0 0;padding:16px 16px calc(var(--sb) + 16px);max-height:95vh;overflow:auto}
+.hoja h3{margin:0 0 6px}
+canvas{width:100%;height:200px;border:2px dashed var(--borde);border-radius:12px;touch-action:none;background:#fff;display:block}
+label{display:block;font-size:12px;color:var(--gris);font-weight:700;margin:10px 0 0}
+input,textarea{display:block;width:100%;margin-top:4px;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px;color:var(--azul)}
+.cont{display:flex;gap:8px;margin-top:10px}.cont a{flex:1;text-align:center;padding:11px;border-radius:10px;background:var(--claro);color:var(--azul);font-weight:700;text-decoration:none;font-size:14px}
+.firmaimg{max-height:70px;max-width:220px;display:block;margin-top:6px}
+.cargando{text-align:center;color:var(--gris);padding:60px 20px}
+</style>
+</head>
+<body>
+<header><div class="w"><div><h1 id="marca"></h1><small id="lema"></small></div><div class="n"><b>PRESUPUESTO</b><span id="num"></span></div></div></header>
+<main id="main"><div class="cargando">Cargando presupuesto…</div></main>
+<div class="barra" id="barra" hidden><div class="w"><button class="btn" id="bNo">No me interesa</button><button class="btn si" id="bSi">✓ Aceptar y firmar</button></div></div>
+<div class="velo" id="vFirma"><div class="hoja">
+  <h3>Aceptar presupuesto</h3><p class="muted" style="margin:0 0 10px">Firma con el dedo en el recuadro para aceptar el presupuesto.</p>
+  <canvas id="cv"></canvas><button class="btn" id="fBorrar" style="margin-top:8px;padding:10px;font-size:14px">Borrar firma</button>
+  <div class="g2"><label>Nombre y apellidos<input id="fNom" autocomplete="name"></label><label>DNI / NIF<input id="fDni"></label></div>
+  <label>Comentario (opcional)<textarea id="fCom" rows="2" placeholder="Por ejemplo, el día que te va mejor"></textarea></label>
+  <div style="display:flex;gap:10px;margin-top:14px"><button class="btn" id="fCancelar">Cancelar</button><button class="btn si" id="fOk">Aceptar presupuesto</button></div>
+</div></div>
+<div class="velo" id="vNo"><div class="hoja">
+  <h3>¿No te interesa?</h3><p class="muted" style="margin:0 0 6px">Si quieres, dinos el motivo; nos ayuda a mejorar.</p>
+  <label>Motivo (opcional)<textarea id="nCom" rows="3"></textarea></label>
+  <div style="display:flex;gap:10px;margin-top:14px"><button class="btn" id="nCancelar">Volver</button><button class="btn" id="nOk" style="background:var(--rojo);color:#fff">Rechazar presupuesto</button></div>
+</div></div>
+<script src="/config.js"></script>
+<script src="/nube.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const eur=v=>{const s=(Math.round(v*100)/100).toFixed(2).split(".");return s[0].replace(/\B(?=(\d{3})+(?!\d))/g,".")+","+s[1]+" €"};
+const fES=f=>{if(!f)return"";const[a,m,d]=String(f).slice(0,10).split("-");return`${d}/${m}/${a}`};
+const token=new URLSearchParams(location.search).get("c");
+let P=null;
+async function cargar(){
+  if(!token||!/^[0-9a-f-]{36}$/i.test(token)){$("main").innerHTML=`<div class="cargando">Enlace no válido.</div>`;return}
+  try{P=await Nube.rpcPublica("ver_presupuesto",{p_token:token})}catch(e){$("main").innerHTML=`<div class="cargando">No se ha podido cargar el presupuesto. Revisa la conexión y vuelve a abrir el enlace.</div>`;return}
+  if(!P){$("main").innerHTML=`<div class="cargando">Este presupuesto ya no está disponible.</div>`;return}
+  pintar()}
+function pintar(){const d=P.datos,E=d.empresa||{},c=d.cliente||{};
+  document.title="Presupuesto "+P.numero+(E.marca?" · "+E.marca:"");$("marca").textContent=E.marca||"";$("lema").textContent=E.lema||"";$("num").textContent=P.numero;
+  const caducado=d.validoHasta&&new Date(d.validoHasta+"T23:59:59")<new Date();
+  let h="";
+  if(P.estado==="aceptado")h+=`<div class="estado ok"><b>✓ Presupuesto aceptado</b><br>Firmado por ${esc(P.firma_nombre||"el cliente")} el ${new Date(P.respondido).toLocaleDateString("es-ES")}. Nos pondremos en contacto contigo para concretar el día. ¡Gracias!</div>`;
+  else if(P.estado==="rechazado")h+=`<div class="estado no"><b>Presupuesto rechazado</b><br>Si cambias de idea, escríbenos y lo revisamos.</div>`;
+  else if(caducado)h+=`<div class="estado av"><b>Este presupuesto ha caducado</b> (era válido hasta el ${fES(d.validoHasta)}). Contacta con nosotros para actualizarlo.</div>`;
+  h+=`<div class="card g2"><div><div class="lab">Cliente</div><b>${esc(c.nombre)}</b><div class="muted">${[c.contacto&&"Att.: "+c.contacto,c.nif&&"NIF/CIF: "+c.nif,c.direccion].filter(Boolean).map(esc).join("<br>")}</div></div>
+    <div><div class="lab">Datos</div><div class="muted">Fecha: <b>${fES(d.fecha)}</b><br>Válido hasta: <b>${fES(d.validoHasta)}</b><br>Nº: <b>${esc(P.numero)}</b></div></div></div>`;
+  if(d.titulo)h+=`<h2>${esc(d.titulo)}</h2>`;
+  h+=`<div class="card">${d.filas.map(f=>`<div class="fila"><div><b>${esc(f.c)}</b>${f.d?`<small>${esc(f.d)}</small>`:""}</div><div class="imp"><b>${eur(f.imp)}</b><small>${String(f.q).replace(".",",")} × ${eur(f.unit)}</small></div></div>`).join("")}</div>`;
+  h+=`<div class="total"><span>${d.part?"TOTAL (IVA incluido)":"TOTAL"}</span><span>${eur(d.total)}</span></div>
+    <div class="desg">Base imponible ${eur(d.base)} · IVA 21 % ${eur(d.cuota)}${d.part?"":" · Precios sin IVA"}</div>`;
+  if((d.planos||[]).length)h+=`<div class="card" style="margin-top:14px"><div class="lab">Plano de la instalación</div>${d.planos.map(p=>`<div class="muted" style="margin-top:6px">${esc(p.nombre)}</div><img class="plano" src="${p.img}" alt="">`).join("")}</div>`;
+  h+=`<div class="card" style="margin-top:14px"><div class="lab">Condiciones</div><ul class="muted">${(d.condiciones||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+  <div class="card"><div class="lab">${esc(E.marca||"")}</div><div class="muted">${esc(E.titular||"")}${E.nie?" · NIF "+esc(E.nie):""}<br>${esc(E.localidad||"")}<br>${esc(E.telefono||"")} · ${esc(E.email||"")}</div>
+    ${E.firma?`<img class="firmaimg" src="${E.firma}" alt="Firma">`:""}
+    <div class="cont"><a href="tel:${esc(String(E.telefono||"").replace(/\s/g,""))}">📞 Llamar</a><a href="https://wa.me/34${esc(String(E.telefono||"").replace(/\D/g,""))}?text=${encodeURIComponent("Hola, sobre el presupuesto "+P.numero)}">💬 WhatsApp</a></div></div>`;
+  $("main").innerHTML=h;$("barra").hidden=!(P.estado==="enviado"&&!caducado)}
+// Firma
+const cv=$("cv"),cx=cv.getContext("2d");let trazo=false;
+function prepararFirma(){const r=cv.getBoundingClientRect();cv.width=Math.round(r.width*2);cv.height=Math.round(r.height*2);cx.fillStyle="#fff";cx.fillRect(0,0,cv.width,cv.height);trazo=false}
+let dib=false,ult=null;const pos=e=>{const b=cv.getBoundingClientRect();return{x:(e.clientX-b.left)*cv.width/b.width,y:(e.clientY-b.top)*cv.height/b.height}};
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);dib=true;ult=pos(e);trazo=true};
+cv.onpointermove=e=>{if(!dib)return;const p=pos(e);cx.strokeStyle="#0B1F3A";cx.lineWidth=5;cx.lineCap="round";cx.beginPath();cx.moveTo(ult.x,ult.y);cx.lineTo(p.x,p.y);cx.stroke();ult=p};
+cv.onpointerup=cv.onpointercancel=()=>dib=false;
+$("fBorrar").onclick=prepararFirma;
+$("bSi").onclick=()=>{$("vFirma").classList.add("on");prepararFirma();const c=P.datos.cliente||{};if(!$("fNom").value)$("fNom").value=c.contacto||c.nombre||"";if(!$("fDni").value)$("fDni").value=c.nif||""};
+$("fCancelar").onclick=()=>$("vFirma").classList.remove("on");
+function firmaPNG(){const k=Math.min(1,600/cv.width),o=document.createElement("canvas");o.width=Math.round(cv.width*k);o.height=Math.round(cv.height*k);const x=o.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,o.width,o.height);x.drawImage(cv,0,0,o.width,o.height);return o.toDataURL("image/png")}
+$("fOk").onclick=async()=>{if(!trazo){alert("Firma en el recuadro para aceptar");return}if(!$("fNom").value.trim()){alert("Escribe tu nombre");return}
+  $("fOk").disabled=true;$("fOk").textContent="Enviando…";
+  try{const r=await Nube.rpcPublica("responder_presupuesto",{p_token:token,p_acepta:true,p_nombre:$("fNom").value.trim(),p_dni:$("fDni").value.trim(),p_firma:firmaPNG(),p_comentario:$("fCom").value.trim()});
+    $("vFirma").classList.remove("on");await cargar();if(r!=="ok")alert("Este presupuesto ya estaba respondido.")}catch(e){alert("No se ha podido enviar. Revisa la conexión e inténtalo de nuevo.")}
+  $("fOk").disabled=false;$("fOk").textContent="Aceptar presupuesto"};
+$("bNo").onclick=()=>$("vNo").classList.add("on");$("nCancelar").onclick=()=>$("vNo").classList.remove("on");
+$("nOk").onclick=async()=>{try{await Nube.rpcPublica("responder_presupuesto",{p_token:token,p_acepta:false,p_nombre:"",p_dni:"",p_firma:null,p_comentario:$("nCom").value.trim()});$("vNo").classList.remove("on");await cargar()}catch(e){alert("No se ha podido enviar. Inténtalo de nuevo.")}};
+cargar();
+</script>
+</body>
+</html>

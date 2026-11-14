@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B1F3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planos">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon-192.png">
+<title>Planos</title>
+<style>
+:root{--azul:#0B1F3A;--acento:#1E88E5;--gris:#5F6B7A;--claro:#EEF2F7;--borde:#D6DEE8;--rojo:#C62828;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--azul);overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+header{background:var(--azul);color:#fff;padding:calc(var(--st) + 6px) 8px 6px;display:flex;align-items:center;gap:4px}
+header .tit{flex:1;min-width:0;padding:0 4px}
+header .tit b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .tit small{display:block;font-size:11px;opacity:.7;letter-spacing:.08em}
+a.ib{color:#fff;text-decoration:none}
+.ib{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px}
+.ib:active{background:rgba(255,255,255,.15)}
+.ib[disabled]{opacity:.35}
+#tabs{display:flex;gap:6px;padding:6px 8px;overflow-x:auto;background:var(--claro);border-bottom:1px solid var(--borde);scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+#tabs button{flex:none;padding:6px 12px;border-radius:16px;background:#fff;border:1px solid var(--borde);font-size:13px;font-weight:600}
+#tabs button.on{background:var(--azul);color:#fff;border-color:var(--azul)}
+#lienzo{flex:1;position:relative;overflow:hidden;background:#fff}
+#plano{position:absolute;inset:0;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
+#aviso{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(11,31,58,.88);color:#fff;font-size:13px;padding:6px 12px;border-radius:14px;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis;display:none}
+#zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+#zoom button{width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid var(--borde);box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:18px;font-weight:700}
+#panel{background:#fff;border-top:1px solid var(--borde);padding:8px;display:none;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px}
+#panel.on{display:flex}
+#panel .nom{font-weight:700;margin-right:auto;font-size:14px}
+.pb{padding:8px 11px;border-radius:9px;background:var(--claro);font-weight:600;font-size:13px;white-space:nowrap}
+.pb.rojo{background:#FDECEC;color:var(--rojo)}
+.pb.az{background:var(--azul);color:#fff}
+#panel input{width:70px;padding:7px;border:1px solid var(--borde);border-radius:8px;font:inherit;font-size:16px}
+.circ{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px var(--borde)}
+.circ.on{box-shadow:0 0 0 2px var(--azul)}
+nav{display:flex;background:var(--azul);padding:4px 2px calc(var(--sb) + 4px);overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:1 0 auto;min-width:56px;color:#B8C7DA;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 4px;border-radius:10px;font-size:10.5px;font-weight:600}
+nav button span{font-size:20px;line-height:22px}
+nav button.on{color:#fff;background:rgba(255,255,255,.14)}
+.velo{position:fixed;inset:0;background:rgba(11,31,58,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.velo.on{display:flex}
+.hoja{background:#fff;width:100%;max-width:640px;max-height:84vh;overflow:auto;border-radius:18px 18px 0 0;padding:14px 14px calc(var(--sb) + 18px)}
+.hoja h2{margin:2px 0 10px;font-size:18px;display:flex;align-items:center}
+.hoja h2 .x{margin-left:auto;font-size:22px;width:36px;height:36px}
+.hoja h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);margin:14px 0 6px}
+.rej{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.rej button{border:1px solid var(--borde);border-radius:12px;padding:6px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;font-weight:600;line-height:1.15;text-align:center}
+.rej button:active{background:var(--claro)}
+.rej svg{width:52px;height:40px}
+.fila{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--claro)}
+.fila .q{flex:1;min-width:0}
+.fila .q b{display:block}
+.fila .q small{color:var(--gris)}
+.fila.on b{color:var(--acento)}
+.lista{width:100%;border-collapse:collapse;font-size:14px}
+.lista td{padding:6px 2px;border-bottom:1px solid var(--claro)}
+.lista td:last-child{text-align:right;font-weight:700}
+.big{display:block;width:100%;padding:13px;border-radius:12px;background:var(--claro);font-weight:700;margin-top:8px;text-align:left;font-size:15px}
+.big.az{background:var(--azul);color:#fff}
+.big small{display:block;font-weight:500;opacity:.75;font-size:12px}
+#print{display:none}
+#vDlg{z-index:20}
+.modo{display:inline-flex;background:rgba(255,255,255,.12);border-radius:9px;padding:2px;margin-bottom:3px}
+.modo button{color:#B8C7DA;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:7px}
+.modo button.on{background:#fff;color:var(--azul)}
+#app.mpres #tabs,#app.mpres #lienzo,#app.mpres #panel,#app.mpres nav,#app.mpres #bUndo,#app.mpres #bRedo,#app.mpres #bExp,#app.mpres #bProy{display:none}
+#pres{display:none;flex:1;overflow:auto;background:#F3F6FA;-webkit-overflow-scrolling:touch;position:relative}
+#app.mpres #pres{display:block}
+.pcont{padding:12px 12px calc(var(--sb) + 20px);max-width:680px;margin:0 auto}
+.pcont h3 .mas{margin-left:auto;color:var(--acento);font-size:13px;letter-spacing:0;text-transform:none;font-weight:700}
+.pcont h3{display:flex;align-items:center}
+.pcont h3,.hoja h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);margin:16px 0 6px}
+.tarjeta{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.tarjeta.ok{background:#E3F2FD}
+.tarjeta .imp{white-space:nowrap;font-size:14px;text-align:right}
+.tarjeta .imp small{display:block;font-weight:500;color:var(--gris);font-size:10px}
+.vacio{color:var(--gris);font-size:14px;text-align:center;padding:14px}
+.caja{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:10px 12px}
+.caja label,.hoja label{display:block;font-size:12px;color:var(--gris);font-weight:600;margin:6px 0}
+.caja input,.caja textarea,.hoja input:not([type=radio]):not([type=checkbox]){display:block;width:100%;margin-top:3px;padding:9px 10px;border:1px solid var(--borde);border-radius:9px;font:inherit;font-size:16px;color:var(--azul);background:#fff}
+.caja textarea{resize:vertical}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bots{margin-top:10px}.bots .pb{width:100%;padding:11px 8px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.seg button{border:1px solid var(--borde);border-radius:10px;padding:8px;font-weight:700;font-size:14px;background:#fff}
+.seg button small{display:block;font-weight:500;font-size:11px;color:var(--gris)}
+.seg button.on{background:var(--azul);color:#fff;border-color:var(--azul)}.seg button.on small{color:#B8C7DA}
+.volver{font-weight:700;color:var(--acento);font-size:15px;padding:4px 0 10px}
+.part{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:9px 10px;margin-bottom:7px;display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+.part .pc{grid-column:1/3;cursor:pointer}.part .pc b{display:block;font-size:14px}.part .pc small{color:var(--gris);font-size:12px}
+.pq{display:flex;align-items:center;gap:4px}.pq button{width:34px;height:32px;border-radius:8px;background:var(--claro);font-size:18px;font-weight:700}
+.pq span{min-width:38px;text-align:center;font-weight:700}
+.pi{text-align:right}.pi small{display:block;color:var(--gris);font-size:11px}.pi b{font-size:15px}
+.barraTotal{position:sticky;bottom:0;background:var(--azul);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 14px calc(var(--sb) + 10px)}
+.barraTotal div{flex:1}.barraTotal small{display:block;font-size:11px;color:#B8C7DA}.barraTotal b{font-size:17px}
+.barraTotal .pb{background:#fff;color:var(--azul);padding:11px 20px;font-size:15px}
+.ayuda{display:block;color:var(--gris);font-size:11.5px;margin-top:6px;line-height:1.35}
+.chk{display:flex!important;gap:8px;align-items:center;font-size:13px!important;margin-top:10px!important}
+.trow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--claro);font-size:12.5px}
+.trow span{flex:1}.trow input{width:86px!important;flex:none;margin:0!important;padding:6px!important;font-size:15px!important}
+#firmaCv{width:100%;height:auto;border:1px dashed var(--borde);border-radius:10px;touch-action:none;background:#fff}
+#impLista .tarjeta{display:flex;align-items:center;gap:10px}
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  #app,.velo{display:none!important}
+  html,body{height:auto;overflow:visible}
+  #print{display:block}
+  #print svg{width:100%;height:auto;max-height:190mm;page-break-after:always;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="ib" href="/" title="Inicio">⌂</a>
+    <button class="ib" id="bProy" title="Proyectos">☰</button>
+    <div class="tit"><div class="modo"><button data-m="planos" class="on">Planos</button><button data-m="pres">Presupuestos</button></div><span id="nubeEst" style="font-size:13px;margin-left:6px;color:#8FA3BC" title="">☁︎</span><b id="nomProy">—</b></div>
+    <button class="ib" id="bUndo" title="Deshacer">↶</button>
+    <button class="ib" id="bRedo" title="Rehacer">↷</button>
+    <button class="ib" id="bExp" title="Exportar">⇪</button>
+  </header>
+  <div id="tabs"></div>
+  <div id="lienzo">
+    <svg id="plano" xmlns="http://www.w3.org/2000/svg"><g id="vista"><g id="capaR"></g><g id="capaF"></g><g id="capa"></g></g></svg>
+    <div id="aviso"></div>
+    <div id="zoom"><button id="zMas">+</button><button id="zMenos">−</button><button id="zAjustar" style="font-size:14px">⤢</button></div>
+  </div>
+  <div id="panel"></div>
+  <div id="pres"></div>
+  <nav id="herr">
+    <button data-h="sel" class="on"><span>✋</span>Mover</button>
+    <button data-h="pared"><span>▬</span>Pared</button>
+    <button data-h="hab"><span>▢</span>Habitación</button>
+    <button data-h="simb"><span>⊕</span>Símbolos</button>
+    <button data-h="cable"><span>〰</span>Cable</button>
+    <button data-h="texto"><span>T</span>Texto</button>
+    <button data-h="resumen"><span>Σ</span>Resumen</button>
+  </nav>
+</div>
+
+<div class="velo" id="vSimb"><div class="hoja"><h2>Añadir símbolo <button class="x" data-cerrar>×</button></h2><div id="paleta"></div></div></div>
+<div class="velo" id="vProy"><div class="hoja"><h2>Proyectos <button class="x" data-cerrar>×</button></h2><div id="listaProy"></div>
+  <button class="big az" id="bNuevo">＋ Nuevo plano desde cero</button></div></div>
+<div class="velo" id="vRes"><div class="hoja"><h2>Resumen y mediciones <button class="x" data-cerrar>×</button></h2><div id="resumen"></div>
+  <button class="big az" id="bCopiar">Copiar resumen<small>Para pegarlo en WhatsApp o pasármelo para el presupuesto</small></button></div></div>
+<div class="velo" id="vExp"><div class="hoja"><h2>Exportar y compartir <button class="x" data-cerrar>×</button></h2>
+  <button class="big az" id="ePng">Imagen de esta planta (PNG)<small>Con la cabecera de tu empresa y leyenda con cantidades</small></button>
+  <button class="big" id="ePngTodas">Imágenes de todas las plantas</button>
+  <button class="big" id="ePdf">PDF / Imprimir<small>Una planta por página, A4 horizontal (elige «Guardar como PDF»)</small></button>
+  <h3>Copia de seguridad</h3>
+  <button class="big" id="eJson">Guardar copia del proyecto (.json)</button>
+  <button class="big" id="eImp">Abrir copia (.json)</button>
+  <input type="file" id="fImp" accept=".json,application/json" hidden>
+</div></div>
+<div class="velo" id="vDlg" style="align-items:center;padding:16px"><div class="hoja" style="border-radius:16px;max-width:420px;padding:18px">
+  <div id="dMsg" style="font-weight:700;font-size:16px;margin-bottom:12px"></div>
+  <input id="dIn" style="width:100%;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px" autocomplete="off">
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="pb" id="dNo">Cancelar</button><button class="pb az" id="dOk">Aceptar</button></div>
+</div></div>
+<div class="velo" id="vPart"><div class="hoja"><h2>Partida <button class="x" data-cerrar>×</button></h2><div id="partForm"></div>
+  <div class="g2 bots"><button class="pb rojo" id="pfDel">Eliminar</button><button class="pb az" id="pfOk">Guardar</button></div></div></div>
+<div class="velo" id="vTar"><div class="hoja"><h2>Tu tarifa <button class="x" data-cerrar>×</button></h2>
+  <input id="tarBus" placeholder="Buscar (enchufe, cámara, cable…)" autocomplete="off"><div id="tarLista"></div>
+  <button class="big az" data-cerrar>Listo</button></div></div>
+<div class="velo" id="vImp"><div class="hoja"><h2>Cargar desde un plano <button class="x" data-cerrar>×</button></h2>
+  <div id="impLista"></div><h3>Cómo está la obra</h3>
+  <label class="chk"><input type="checkbox" id="impTubo"> Tubos y cajas ya puestos (solo pasar cable)</label>
+  <label class="chk"><input type="checkbox" id="impEmp"> Empotrado: añadir roza y tapado</label>
+  <label class="chk"><input type="checkbox" id="impMat" checked> Incluir material (Asfora, cable, tubo y cajas)</label>
+  <button class="big az" id="impOk">Añadir al presupuesto</button></div></div>
+<div class="velo" id="vFondo"><div class="hoja"><h2>Plano de fondo <button class="x" data-cerrar>×</button></h2><div id="fondoForm"></div></div></div>
+<div class="velo" id="vCli"><div class="hoja"><h2>Mis clientes <button class="x" data-cerrar>×</button></h2><input id="cliBus" placeholder="Buscar cliente" autocomplete="off"><div id="cliLista"></div></div></div>
+<div class="velo" id="vAj"><div class="hoja"><h2>Empresa, firma y tarifas <button class="x" data-cerrar>×</button></h2><div id="ajForm"></div></div></div>
+<div id="print"></div>
+
+<script src="/config.js"></script>
+<script src="/nube.js"></script>
+<script src="/pdf.js"></script>
+<script>
+"use strict";
+if(!Nube.requerir())throw new Error("Hay que iniciar sesión");
+const NS="http://www.w3.org/2000/svg", LS="almara-planos-v1";
+const C={azul:"#0B1F3A",acento:"#1E88E5",gris:"#5F6B7A",nar:"#E8730C",verde:"#2E9D5B",rojo:"#C62828",morado:"#7B3FA0",teal:"#00838F",amar:"#C99A00"};
+const CIRC=[
+  {id:"c1",n:"C1 Alumbrado",c:C.nar},{id:"c2",n:"C2 Enchufes",c:C.acento},{id:"c3",n:"C3 Cocina/horno",c:C.rojo},
+  {id:"c4",n:"C4 Lavadora/lavav./termo",c:C.morado},{id:"c5",n:"C5 Baño/cocina",c:C.teal},{id:"c6",n:"Aire acondicionado",c:C.verde},
+  {id:"c7",n:"Datos / TV",c:C.amar},{id:"c0",n:"Otro",c:C.gris}];
+// Tipos de símbolo. g = grupo de la paleta; box = rótulo con texto; w = ancho (m) para puertas y ventanas
+const T={
+  enchufe:{n:"Enchufe",g:"Enchufes"}, doble:{n:"Enchufe doble",g:"Enchufes"}, estanco:{n:"Enchufe estanco",g:"Enchufes"},
+  usb:{n:"Enchufe USB",g:"Enchufes"}, encimera:{n:"Enchufe encimera",g:"Enchufes"},
+  luz:{n:"Punto de luz",g:"Iluminación"}, luzc:{n:"Luz conmutada",g:"Iluminación"}, aplique:{n:"Aplique",g:"Iluminación"},
+  foco:{n:"Foco empotrado",g:"Iluminación"}, led:{n:"Tira LED",g:"Iluminación"}, exterior:{n:"Luz exterior",g:"Iluminación"},
+  inter:{n:"Interruptor",g:"Mandos"}, conm:{n:"Conmutador",g:"Mandos"}, cruce:{n:"Cruzamiento",g:"Mandos"},
+  puls:{n:"Pulsador",g:"Mandos"}, pir:{n:"Detector movimiento",g:"Mandos"}, persiana:{n:"Mando persiana",g:"Mandos"}, timbre:{n:"Timbre",g:"Mandos"},
+  cuadro:{n:"Cuadro eléctrico",g:"Cuadro y líneas",box:"CUADRO",c:C.azul,fill:1,w:.7},
+  horno:{n:"Línea horno",g:"Cuadro y líneas",box:"HORNO",c:C.rojo}, vitro:{n:"Línea vitro",g:"Cuadro y líneas",box:"VITRO",c:C.rojo},
+  lavadora:{n:"Línea lavadora",g:"Cuadro y líneas",box:"LAVADORA",c:C.morado}, lavavaj:{n:"Línea lavavajillas",g:"Cuadro y líneas",box:"LAVAVAJ.",c:C.morado},
+  secadora:{n:"Línea secadora",g:"Cuadro y líneas",box:"SECADORA",c:C.morado}, termo:{n:"Línea termo",g:"Cuadro y líneas",box:"TERMO",c:C.morado},
+  aa:{n:"Línea aire",g:"Cuadro y líneas",box:"A/A",c:C.verde}, extractor:{n:"Extractor",g:"Cuadro y líneas",box:"EXTRAC.",c:C.gris},
+  ve:{n:"Cargador coche",g:"Cuadro y líneas",box:"CARGADOR VE",c:C.verde}, linea:{n:"Línea (otra)",g:"Cuadro y líneas",box:"LÍNEA",c:C.gris},
+  subida:{n:"Subida a planta",g:"Cuadro y líneas",box:"↑ PLANTA",c:C.azul},
+  tv:{n:"Toma TV",g:"Telecom y seguridad",box:"TV",c:C.amar}, rj45:{n:"Toma red RJ45",g:"Telecom y seguridad",box:"RJ45",c:C.amar},
+  ap:{n:"Punto WiFi",g:"Telecom y seguridad"}, router:{n:"Router",g:"Telecom y seguridad",box:"ROUTER",c:C.amar},
+  starlink:{n:"Antena Starlink",g:"Telecom y seguridad"}, rack:{n:"Rack",g:"Telecom y seguridad",box:"RACK",c:C.azul,fill:1},
+  camara:{n:"Cámara",g:"Telecom y seguridad"}, ptel:{n:"Portero / videoportero",g:"Telecom y seguridad",box:"PORTERO",c:C.gris},
+  puerta:{n:"Puerta",g:"Arquitectura",w:.8}, corredera:{n:"Puerta corredera",g:"Arquitectura",w:.8}, ventana:{n:"Ventana",g:"Arquitectura",w:1.2},
+  escalera:{n:"Escalera",g:"Arquitectura",w:1}, texto:{n:"Texto",g:"Arquitectura"}
+};
+const GRUPOS=["Enchufes","Iluminación","Mandos","Cuadro y líneas","Telecom y seguridad","Arquitectura"];
+const NO_CUENTA={texto:1,puerta:1,corredera:1,ventana:1,escalera:1};
+
+// ---------- Estado ----------
+let db={proy:[],cur:null}, hist=[], rehacer=[];
+let herr="sel", colocar=null, circ="c2", sel=null, cam={x:0,y:0,s:45};
+let cotas=true;
+const $=id=>document.getElementById(id);
+const svg=$("plano"), vista=$("vista");
+const uid=()=>Math.random().toString(36).slice(2,9);
+const P=()=>db.proy.find(p=>p.id===db.cur);
+const PL=()=>{const p=P();return p.plantas.find(x=>x.id===p.planta)||p.plantas[0]};
+const r2=v=>Math.round(v*100)/100;
+const fmt=(v,d=2)=>v.toFixed(d).replace(".",",");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function nuevoProyecto(nombre,cliente){
+  const pl={id:uid(),nombre:"Planta baja",paredes:[],cables:[],items:[]};
+  return {id:uid(),nombre,cliente:cliente||"",fecha:new Date().toISOString().slice(0,10),plantas:[pl],planta:pl.id};
+}
+function cargar(){
+  try{const s=localStorage.getItem(LS);if(s)db=JSON.parse(s)}catch(e){}
+  if(!db.proy||!db.proy.length){const p=nuevoProyecto("Plano nuevo");db={proy:[p],cur:p.id}}
+  if(!P())db.cur=db.proy[0].id;
+}
+function guardar(){try{localStorage.setItem(LS,JSON.stringify(db));Nube.marcar("planos")}catch(e){aviso("No se ha podido guardar en el móvil",3000)}}
+function cambio(){hist.push(JSON.stringify(P()));if(hist.length>80)hist.shift();rehacer=[];botonesHist()}
+function fin(){guardar();dibujar()}
+function botonesHist(){$("bUndo").disabled=!hist.length;$("bRedo").disabled=!rehacer.length}
+function reemplazar(json){const i=db.proy.findIndex(p=>p.id===db.cur);db.proy[i]=JSON.parse(json)}
+$("bUndo").onclick=()=>{if(!hist.length)return;rehacer.push(JSON.stringify(P()));reemplazar(hist.pop());sel=null;botonesHist();fin();panel()};
+$("bRedo").onclick=()=>{if(!rehacer.length)return;hist.push(JSON.stringify(P()));reemplazar(rehacer.pop());sel=null;botonesHist();fin();panel()};
+
+// ---------- Diálogos propios (funcionan también dentro de apps y visores) ----------
+function dialogo(msg,valor,conInput,conCancelar){return new Promise(ok=>{
+  const v=$("vDlg"),i=$("dIn");$("dMsg").textContent=msg;i.style.display=conInput?"block":"none";i.value=valor||"";$("dNo").style.display=conCancelar?"":"none";
+  v.classList.add("on");if(conInput)setTimeout(()=>{i.focus();i.select()},60);
+  const fin=r=>{v.classList.remove("on");$("dOk").onclick=$("dNo").onclick=i.onkeydown=null;ok(r)};
+  $("dOk").onclick=()=>fin(conInput?i.value:true);$("dNo").onclick=()=>fin(conInput?null:false);
+  i.onkeydown=e=>{if(e.key==="Enter")fin(i.value)}})}
+const pedir=(m,v)=>dialogo(m,v,true,true), confirmar=m=>dialogo(m,"",false,true), avisar=m=>dialogo(m,"",false,false);
+
+// ---------- Símbolos ----------
+function simb(it){
+  const t=it.t, d=T[t]||{}, sw=.028;
+  const L=(x1,y1,x2,y2,c,w)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w||sw}" stroke-linecap="round"/>`;
+  const Ci=(x,y,r,c,f)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${f||"#fff"}" stroke="${c}" stroke-width="${sw}"/>`;
+  const Tx=(x,y,s,txt,c,w)=>`<text x="${x}" y="${y}" font-size="${s}" fill="${c}" font-weight="${w||700}" text-anchor="middle" dominant-baseline="central" font-family="Helvetica,Arial,sans-serif">${esc(txt)}</text>`;
+  const pins=(x,c)=>L(x-.045,-.06,x-.045,.06,c)+L(x+.045,-.06,x+.045,.06,c);
+  const X=(r,c)=>{const k=r*.707;return L(-k,-k,k,k,c)+L(-k,k,k,-k,c)};
+  const tick=(dir,c)=>{const a=dir*-.7854,ex=Math.cos(a)*.26*dir,ey=Math.sin(a)*.26*dir;return L(0,0,ex,ey,c)+L(ex,ey,ex+.07*Math.cos(a+1.57)*dir,ey+.07*Math.sin(a+1.57)*dir,c)};
+  switch(t){
+    case"enchufe":return Ci(0,0,.15,C.acento)+pins(0,C.acento);
+    case"doble":return Ci(-.13,0,.14,C.acento)+pins(-.13,C.acento)+Ci(.13,0,.14,C.acento)+pins(.13,C.acento);
+    case"estanco":return Ci(0,0,.15,C.teal,"#E3F4F5")+pins(0,C.teal)+Tx(0,.26,.1,"IP",C.teal);
+    case"usb":return Ci(0,0,.15,C.acento)+pins(0,C.acento)+Tx(0,.26,.09,"USB",C.acento);
+    case"encimera":return Ci(0,0,.15,C.teal)+pins(0,C.teal)+L(-.2,.2,.2,.2,C.teal);
+    case"luz":return Ci(0,0,.16,C.nar)+X(.16,C.nar);
+    case"luzc":return Ci(0,0,.16,C.morado)+X(.16,C.morado)+`<circle r=".21" fill="none" stroke="${C.morado}" stroke-width=".02"/>`;
+    case"aplique":return Ci(0,0,.13,C.nar)+X(.13,C.nar)+L(-.18,.17,.18,.17,C.nar,.04);
+    case"foco":return `<circle r=".13" fill="#fff" stroke="${C.nar}" stroke-width="${sw}"/><circle r=".06" fill="${C.nar}"/>`;
+    case"led":return `<rect x="-.35" y="-.05" width=".7" height=".1" rx=".03" fill="#FFE7CF" stroke="${C.nar}" stroke-width="${sw}"/>`+Tx(0,.15,.08,"LED",C.nar);
+    case"exterior":return Ci(0,0,.15,C.nar,"#FFF3E6")+X(.15,C.nar)+Tx(0,.27,.09,"EXT",C.nar);
+    case"inter":return `<circle r=".05" fill="${C.verde}"/>`+tick(1,C.verde);
+    case"conm":return `<circle r=".05" fill="${C.verde}"/>`+tick(1,C.verde)+tick(-1,C.verde);
+    case"cruce":return `<circle r=".05" fill="${C.verde}"/>`+tick(1,C.verde)+tick(-1,C.verde)+`<circle r=".11" fill="none" stroke="${C.verde}" stroke-width=".02"/>`;
+    case"puls":return Ci(0,0,.11,C.verde)+`<circle r=".045" fill="${C.verde}"/>`;
+    case"pir":return Ci(0,0,.15,C.verde)+Tx(0,0,.085,"PIR",C.verde);
+    case"persiana":return `<rect x="-.13" y="-.13" width=".26" height=".26" rx=".03" fill="#fff" stroke="${C.verde}" stroke-width="${sw}"/>`+Tx(0,-.045,.09,"▲",C.verde)+Tx(0,.05,.09,"▼",C.verde);
+    case"timbre":return `<path d="M-.12 .08 Q-.12 -.14 0 -.14 Q.12 -.14 .12 .08 Z" fill="#fff" stroke="${C.verde}" stroke-width="${sw}"/>`+L(-.15,.08,.15,.08,C.verde)+`<circle cy=".12" r=".03" fill="${C.verde}"/>`;
+    case"ap":return Ci(0,0,.17,C.amar,"#FFF8E1")+`<path d="M-.09 -.01 Q0 -.09 .09 -.01 M-.05 .03 Q0 -.01 .05 .03" fill="none" stroke="${C.amar}" stroke-width=".022" stroke-linecap="round"/><circle cy=".07" r=".02" fill="${C.amar}"/>`;
+    case"starlink":return `<rect x="-.2" y="-.14" width=".4" height=".28" rx=".04" fill="#fff" stroke="${C.azul}" stroke-width="${sw}"/>`+L(0,.14,0,.26,C.azul)+Tx(0,0,.075,"STARLINK",C.azul);
+    case"camara":return `<rect x="-.16" y="-.09" width=".24" height=".18" rx=".03" fill="#FDECEC" stroke="${C.rojo}" stroke-width="${sw}"/><path d="M.08 -.05 L.18 -.1 L.18 .1 L.08 .05 Z" fill="${C.rojo}"/>`;
+    case"puerta":{const w=it.w||d.w,h=w/2;return `<rect x="${-h}" y="-.075" width="${w}" height=".15" fill="#fff"/>`+L(-h,0,-h,-w,C.azul,.025)+`<path d="M${-h} ${-w} A${w} ${w} 0 0 1 ${h} 0" fill="none" stroke="${C.gris}" stroke-width=".015" stroke-dasharray=".05 .04"/>`+L(-h,-.07,-h,.07,C.azul,.03)+L(h,-.07,h,.07,C.azul,.03)}
+    case"corredera":{const w=it.w||d.w,h=w/2;return `<rect x="${-h}" y="-.075" width="${w}" height=".15" fill="#fff"/>`+`<rect x="${-h}" y="-.03" width="${w*.6}" height=".04" fill="#fff" stroke="${C.azul}" stroke-width=".02"/>`+`<rect x="${-h+w*.35}" y="-.01" width="${w*.6}" height=".04" fill="#fff" stroke="${C.gris}" stroke-width=".02" stroke-dasharray=".04 .03"/>`}
+    case"ventana":{const w=it.w||d.w,h=w/2;return `<rect x="${-h}" y="-.07" width="${w}" height=".14" fill="#fff" stroke="${C.azul}" stroke-width=".02"/>`+L(-h,0,h,0,C.acento,.02)}
+    case"escalera":{const w=it.w||d.w,n=8,lng=2.4;let s=`<rect x="${-w/2}" y="${-lng/2}" width="${w}" height="${lng}" fill="#fff" stroke="${C.gris}" stroke-width=".02"/>`;for(let i=1;i<n;i++){const y=-lng/2+i*lng/n;s+=L(-w/2,y,w/2,y,C.gris,.015)}return s+L(0,lng/2-.1,0,-lng/2+.15,C.azul,.02)+`<path d="M-.07 ${-lng/2+.25} L0 ${-lng/2+.12} L.07 ${-lng/2+.25}" fill="none" stroke="${C.azul}" stroke-width=".02"/>`}
+    case"texto":{const s=it.s||.28;return Tx(0,0,s,it.txt||"Texto",C.azul,700)+(it.sub?Tx(0,s*.95,s*.6,it.sub,C.gris,500):"")}
+  }
+  if(d.box){const txt=it.txt||d.box,w=Math.max(d.w||0,.13+txt.length*.085);return `<rect x="${-w/2}" y="-.12" width="${w}" height=".24" rx=".04" fill="${d.fill?d.c:"#fff"}" stroke="${d.c}" stroke-width="${sw}"/>`+Tx(0,.005,.115,txt,d.fill?"#fff":d.c)}
+  return Ci(0,0,.15,C.gris);
+}
+function itemSVG(it,conSel){
+  const tr=`translate(${it.x} ${it.y}) rotate(${it.r||0})${it.f?" scale(-1 1)":""}`;
+  let s=`<g data-id="${it.id}" transform="${tr}">`;
+  if(conSel){const w=(it.w||T[it.t]?.w||.3);s+=`<rect x="${-Math.max(w/2,.2)-.06}" y="-.26" width="${Math.max(w,.4)+.12}" height=".52" rx=".08" fill="none" stroke="${C.acento}" stroke-width=".03" stroke-dasharray=".06 .04"/>`}
+  s+=`<circle r="${Math.max(.28,(it.w||0)/2)}" fill="transparent"/>`+simb(it)+"</g>";
+  return s;
+}
+
+// ---------- Dibujo ----------
+function rejilla(){
+  const r=svg.getBoundingClientRect(), s=cam.s;
+  const x0=-cam.x/s, y0=-cam.y/s, x1=(r.width-cam.x)/s, y1=(r.height-cam.y)/s;
+  const paso=s<12?5:s<30?1:.5;
+  let g="";
+  for(let x=Math.floor(x0/paso)*paso;x<=x1;x+=paso){const fuerte=Math.abs(x/ (paso*2) - Math.round(x/(paso*2)))<1e-6||paso>=1&&Math.abs(x%5)<1e-6;g+=`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="${fuerte?"#DCE3EC":"#EEF2F7"}" stroke-width="${1/s}"/>`}
+  for(let y=Math.floor(y0/paso)*paso;y<=y1;y+=paso){const fuerte=Math.abs(y/(paso*2)-Math.round(y/(paso*2)))<1e-6||paso>=1&&Math.abs(y%5)<1e-6;g+=`<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="${fuerte?"#DCE3EC":"#EEF2F7"}" stroke-width="${1/s}"/>`}
+  return g+`<circle r="${4/s}" fill="#C9D3DF"/>`;
+}
+function cotaSVG(w,s){
+  const dx=w.x2-w.x1,dy=w.y2-w.y1,len=Math.hypot(dx,dy);if(len<.3)return"";
+  let a=Math.atan2(dy,dx)*180/Math.PI;if(a>90)a-=180;if(a<=-90)a+=180;
+  const nx=-dy/len,ny=dx/len,o=.22;
+  return `<text x="${(w.x1+w.x2)/2+nx*o}" y="${(w.y1+w.y2)/2+ny*o}" font-size="${s||.17}" fill="${C.gris}" font-weight="600" text-anchor="middle" dominant-baseline="central" font-family="Helvetica,Arial,sans-serif" transform="rotate(${a} ${(w.x1+w.x2)/2+nx*o} ${(w.y1+w.y2)/2+ny*o})">${fmt(len)} m</text>`;
+}
+function escena(pl,opt){
+  opt=opt||{};let s=opt.fondo?fondoSVG(pl,opt.fondo):"";
+  for(const c of pl.cables){const col=(CIRC.find(k=>k.id===c.c)||CIRC[7]).c;s+=`<line x1="${c.x1}" y1="${c.y1}" x2="${c.x2}" y2="${c.y2}" stroke="${col}" stroke-width=".035" stroke-dasharray=".12 .07" stroke-linecap="round"/>`}
+  for(const w of pl.paredes)s+=`<line x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" stroke="${C.azul}" stroke-width="${w.g||.12}" stroke-linecap="square"/>`;
+  if(opt.cotas)for(const w of pl.paredes)s+=cotaSVG(w);
+  for(const it of pl.items)s+=itemSVG(it,false);
+  return s;
+}
+let temp=null;
+function dibujar(){
+  const pl=PL();let s="";$("capaR").innerHTML=rejilla();pintarFondo();
+  // zonas táctiles de cables y paredes
+  for(const c of pl.cables){const col=(CIRC.find(k=>k.id===c.c)||CIRC[7]).c,on=sel&&sel.k==="c"&&sel.id===c.id;
+    s+=`<line data-c="${c.id}" x1="${c.x1}" y1="${c.y1}" x2="${c.x2}" y2="${c.y2}" stroke="transparent" stroke-width="${Math.max(.3,18/cam.s)}"/>`;
+    s+=`<line x1="${c.x1}" y1="${c.y1}" x2="${c.x2}" y2="${c.y2}" stroke="${col}" stroke-width="${on?.07:.035}" stroke-dasharray=".12 .07" stroke-linecap="round" pointer-events="none"/>`}
+  for(const w of pl.paredes){const on=sel&&sel.k==="w"&&sel.id===w.id;
+    s+=`<line data-w="${w.id}" x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" stroke="${on?C.acento:C.azul}" stroke-width="${w.g||.12}" stroke-linecap="square"/>`;
+    s+=`<line data-w="${w.id}" x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" stroke="transparent" stroke-width="${Math.max(.3,18/cam.s)}"/>`}
+  if(cotas)for(const w of pl.paredes)s+=`<g pointer-events="none">${cotaSVG(w)}</g>`;
+  for(const it of pl.items)s+=itemSVG(it,sel&&sel.k==="i"&&sel.id===it.id);
+  // tiradores de extremos
+  if(sel&&(sel.k==="w"||sel.k==="c")){const o=(sel.k==="w"?pl.paredes:pl.cables).find(z=>z.id===sel.id);
+    if(o)for(const e of[1,2])s+=`<circle data-e="${e}" cx="${o["x"+e]}" cy="${o["y"+e]}" r="${11/cam.s}" fill="#fff" stroke="${C.acento}" stroke-width="${3/cam.s}"/>`}
+  if(herr==="medir"&&medirA)s+=`<circle cx="${medirA.x}" cy="${medirA.y}" r="${8/cam.s}" fill="${C.rojo}" stroke="#fff" stroke-width="${2/cam.s}"/>`;
+  if(temp){
+    if(temp.k==="hab"){const x=Math.min(temp.x1,temp.x2),y=Math.min(temp.y1,temp.y2),w=Math.abs(temp.x2-temp.x1),h=Math.abs(temp.y2-temp.y1);
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(30,136,229,.08)" stroke="${C.acento}" stroke-width=".12"/>`}
+    else{const col=temp.k==="cable"?(CIRC.find(k=>k.id===circ)||CIRC[0]).c:C.acento;
+      s+=`<line x1="${temp.x1}" y1="${temp.y1}" x2="${temp.x2}" y2="${temp.y2}" stroke="${col}" stroke-width="${temp.k==="cable"?.05:.12}" stroke-linecap="square" ${temp.k==="cable"?'stroke-dasharray=".12 .07"':""}/>`;
+      s+=cotaSVG(temp,.2)}
+    if(temp.snap)s+=`<circle cx="${temp.snap.x}" cy="${temp.snap.y}" r="${9/cam.s}" fill="none" stroke="${C.verde}" stroke-width="${3/cam.s}"/>`;
+  }
+  vista.setAttribute("transform",`translate(${cam.x} ${cam.y}) scale(${cam.s})`);
+  $("capa").innerHTML=s;
+  const p=P();if(modo==="planos")$("nomProy").textContent=p.nombre+(p.cliente?" · "+p.cliente:"");
+  pestanas();
+}
+function pestanas(){
+  const p=P();let h="";
+  for(const pl of p.plantas)h+=`<button data-pl="${pl.id}" class="${pl.id===PL().id?"on":""}">${esc(pl.nombre)}</button>`;
+  h+=`<button data-pl="fondo">🖼 ${PL().fondo?"Plano de fondo":"Subir plano (foto)"}</button><button data-pl="+">＋ Planta</button><button data-pl="cotas">${cotas?"Ocultar":"Ver"} medidas</button>`;
+  if($("tabs").innerHTML!==h)$("tabs").innerHTML=h;
+}
+$("tabs").onclick=async e=>{
+  const b=e.target.closest("button");if(!b)return;const id=b.dataset.pl,p=P();
+  if(id==="cotas"){cotas=!cotas;dibujar();return}
+  if(id==="fondo"){abrirFondo();return}
+  if(id==="+"){const n=await pedir("Nombre de la planta","Planta "+(p.plantas.length+1));if(!n)return;cambio();const pl={id:uid(),nombre:n,paredes:[],cables:[],items:[]};p.plantas.push(pl);p.planta=pl.id;sel=null;fin();panel();return}
+  if(id===PL().id){ // segunda pulsación: renombrar / borrar
+    const n=await pedir("Nombre de la planta (déjalo vacío para eliminarla)",PL().nombre);if(n===null)return;cambio();
+    if(n.trim()===""){if(p.plantas.length<2){await avisar("El plano necesita al menos una planta");hist.pop();return}
+      if(!await confirmar("¿Eliminar "+PL().nombre+" y todo lo que tiene?")){hist.pop();return}
+      p.plantas=p.plantas.filter(x=>x.id!==id);p.planta=p.plantas[0].id}else PL().nombre=n.trim();
+    fin();return}
+  p.planta=id;sel=null;fin();panel();ajustar();
+};
+
+// ---------- Cámara ----------
+function aMundo(cx,cy){const r=svg.getBoundingClientRect();return{x:(cx-r.left-cam.x)/cam.s,y:(cy-r.top-cam.y)/cam.s}}
+function zoomEn(f,cx,cy){const r=svg.getBoundingClientRect();cx=cx??r.left+r.width/2;cy=cy??r.top+r.height/2;
+  const ns=Math.min(400,Math.max(6,cam.s*f));const mx=(cx-r.left-cam.x)/cam.s,my=(cy-r.top-cam.y)/cam.s;
+  cam.s=ns;cam.x=cx-r.left-mx*ns;cam.y=cy-r.top-my*ns;dibujar()}
+function limites(pl){let a=1e9,b=1e9,c=-1e9,d=-1e9;
+  const add=(x,y)=>{a=Math.min(a,x);b=Math.min(b,y);c=Math.max(c,x);d=Math.max(d,y)};
+  for(const w of pl.paredes.concat(pl.cables)){add(w.x1,w.y1);add(w.x2,w.y2)}
+  for(const it of pl.items){const e=Math.max(.35,(it.w||0)/2+.1,it.t==="escalera"?1.3:0);add(it.x-e,it.y-e);add(it.x+e,it.y+e)}
+  if(pl.fondo){const q=cajaFondo(pl.fondo);add(q.x,q.y);add(q.x+q.w,q.y+q.h)}
+  return a>c?null:{x:a,y:b,w:c-a,h:d-b}}
+function ajustar(){const r=svg.getBoundingClientRect(),b=limites(PL());
+  if(!b){cam.s=45;cam.x=r.width*.12;cam.y=r.height*.15;dibujar();return}
+  const m=40;cam.s=Math.min(200,Math.max(8,Math.min((r.width-2*m)/Math.max(b.w,1),(r.height-2*m)/Math.max(b.h,1))));
+  cam.x=r.width/2-(b.x+b.w/2)*cam.s;cam.y=r.height/2-(b.y+b.h/2)*cam.s;dibujar()}
+$("zMas").onclick=()=>zoomEn(1.3);$("zMenos").onclick=()=>zoomEn(1/1.3);$("zAjustar").onclick=ajustar;
+svg.addEventListener("wheel",e=>{e.preventDefault();zoomEn(e.deltaY<0?1.12:1/1.12,e.clientX,e.clientY)},{passive:false});
+document.addEventListener("gesturestart",e=>e.preventDefault());
+
+// ---------- Ajustes (snap) ----------
+const rej=v=>Math.round(v/.05)*.05;
+function puntosClave(pl,excl){const pts=[];
+  for(const w of pl.paredes.concat(pl.cables)){if(excl&&excl.has(w))continue;pts.push({x:w.x1,y:w.y1},{x:w.x2,y:w.y2})}
+  return pts}
+function ajustarPunto(p,origen,tipo,excl){
+  const pl=PL(),rad=16/cam.s;let best=null,bd=rad;
+  const pts=puntosClave(pl,excl);
+  if(tipo==="cable")for(const it of pl.items)if(!NO_CUENTA[it.t])pts.push({x:it.x,y:it.y});
+  for(const q of pts){const d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;best=q}}
+  if(!best&&tipo!=="cable"){ // pegar a cualquier punto de una pared
+    for(const w of pl.paredes){if(excl&&excl.has(w))continue;const q=proyeccion(p,w);if(q.d<rad*.7&&q.d<bd){bd=q.d;best={x:q.x,y:q.y}}}}
+  if(best)return{x:best.x,y:best.y,snap:best};
+  let x=rej(p.x),y=rej(p.y);
+  if(origen){const dx=x-origen.x,dy=y-origen.y;if(Math.abs(dy)<Math.abs(dx)*.13)y=origen.y;else if(Math.abs(dx)<Math.abs(dy)*.13)x=origen.x;}
+  return{x:r2(x),y:r2(y)};
+}
+function proyeccion(p,w){const dx=w.x2-w.x1,dy=w.y2-w.y1,l2=dx*dx+dy*dy||1;let t=((p.x-w.x1)*dx+(p.y-w.y1)*dy)/l2;t=Math.max(0,Math.min(1,t));
+  const x=w.x1+t*dx,y=w.y1+t*dy;return{x,y,d:Math.hypot(p.x-x,p.y-y),a:Math.atan2(dy,dx)*180/Math.PI}}
+function paredCercana(p){let best=null;for(const w of PL().paredes){const q=proyeccion(p,w);if(q.d<.35&&(!best||q.d<best.d))best=q}return best}
+
+// ---------- Interacción ----------
+const ptrs=new Map();let acc=null,pinch=null;
+function aviso(t,ms){const a=$("aviso");if(!t){a.style.display="none";return}a.textContent=t;a.style.display="block";clearTimeout(aviso.t);if(ms)aviso.t=setTimeout(()=>a.style.display="none",ms)}
+function avisoHerr(){
+  const m={medir:"Toca el principio de una medida conocida (haz zoom para precisión)",fondo:"Arrastra con un dedo para mover el plano de fondo",pared:"Arrastra para dibujar una pared",hab:"Arrastra para dibujar una habitación",cable:"Arrastra de un punto a otro para tirar cable",texto:"Toca donde quieras poner el texto"};
+  if(colocar)aviso("Toca el plano para poner: "+T[colocar].n);else aviso(m[herr]||"")}
+svg.addEventListener("pointerdown",e=>{
+  svg.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){temp=null;if(acc&&acc.movido&&acc.tipo==="item"){/*mantener*/}acc=null;
+    const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),cx:(a.x+b.x)/2,cy:(a.y+b.y)/2};dibujar();return}
+  if(ptrs.size>2)return;
+  const w=aMundo(e.clientX,e.clientY),tg=e.target;
+  acc={x0:e.clientX,y0:e.clientY,w0:w,movido:false,camx:cam.x,camy:cam.y};
+  if(colocar||herr==="texto"||herr==="medir"){acc.tipo="tap";return}
+  if(herr==="fondo"&&PL().fondo){acc.tipo="fondo";acc.f0={cx:PL().fondo.cx,cy:PL().fondo.cy};return}
+  if(herr==="pared"||herr==="cable"||herr==="hab"){const p=ajustarPunto(w,null,herr);acc.tipo="dibujar";
+    temp={k:herr,x1:p.x,y1:p.y,x2:p.x,y2:p.y,snap:p.snap};dibujar();return}
+  // seleccionar / mover
+  const pl=PL();
+  if(tg.dataset.e&&sel){const o=(sel.k==="w"?pl.paredes:pl.cables).find(z=>z.id===sel.id);
+    const ex=o["x"+tg.dataset.e],ey=o["y"+tg.dataset.e];const lig=[];
+    for(const z of pl.paredes.concat(pl.cables))for(const k of[1,2])if(Math.abs(z["x"+k]-ex)<1e-6&&Math.abs(z["y"+k]-ey)<1e-6)lig.push([z,k]);
+    acc.tipo="extremo";acc.lig=lig;acc.o=o;acc.k=tg.dataset.e;acc.excl=new Set(lig.map(l=>l[0]));return}
+  const gi=tg.closest("[data-id]");
+  if(gi){const it=pl.items.find(i=>i.id===gi.dataset.id);sel={k:"i",id:it.id};acc.tipo="item";acc.it=it;acc.dx=it.x-w.x;acc.dy=it.y-w.y;dibujar();panel();return}
+  if(tg.dataset.w||tg.dataset.c){const k=tg.dataset.w?"w":"c",id=tg.dataset.w||tg.dataset.c;const o=(k==="w"?pl.paredes:pl.cables).find(z=>z.id===id);
+    sel={k,id};acc.tipo="linea";acc.o=o;acc.orig={...o};dibujar();panel();return}
+  acc.tipo="pan";
+});
+svg.addEventListener("pointermove",e=>{
+  if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&ptrs.size===2){const [a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+    cam.x+=cx-pinch.cx;cam.y+=cy-pinch.cy;pinch.cx=cx;pinch.cy=cy;zoomEn(d/pinch.d,cx,cy);pinch.d=d;return}
+  if(!acc)return;
+  const mv=Math.hypot(e.clientX-acc.x0,e.clientY-acc.y0);if(mv>6&&!acc.movido){acc.movido=true;
+    if(["item","linea","extremo","fondo"].includes(acc.tipo))cambio()}
+  if(!acc.movido)return;
+  const w=aMundo(e.clientX,e.clientY),pl=PL();
+  switch(acc.tipo){
+    case"fondo":{const f=PL().fondo;f.cx=r2(acc.f0.cx+w.x-acc.w0.x);f.cy=r2(acc.f0.cy+w.y-acc.w0.y);pintarFondo();break}
+    case"pan":case"tap":cam.x=acc.camx+e.clientX-acc.x0;cam.y=acc.camy+e.clientY-acc.y0;acc.tipo="pan";dibujar();break;
+    case"dibujar":{const o={x:temp.x1,y:temp.y1};let p;
+      if(herr==="hab"){p={x:r2(rej(w.x)),y:r2(rej(w.y))};const q=ajustarPunto(w,null,"pared");if(q.snap)p=q}else p=ajustarPunto(w,o,herr);
+      temp.x2=p.x;temp.y2=p.y;temp.snap=p.snap;
+      if(herr==="hab")aviso(fmt(Math.abs(temp.x2-temp.x1))+" × "+fmt(Math.abs(temp.y2-temp.y1))+" m");
+      else aviso(fmt(Math.hypot(temp.x2-temp.x1,temp.y2-temp.y1))+" m");
+      dibujar();break}
+    case"item":{const it=acc.it;let x=w.x+acc.dx,y=w.y+acc.dy;
+      if(["puerta","corredera","ventana","enchufe","doble","estanco","usb","encimera","inter","conm","cruce","puls","persiana","aplique","tv","rj45"].includes(it.t)){
+        const q=paredCercana({x,y});if(q&&["puerta","corredera","ventana"].includes(it.t)){x=q.x;y=q.y;it.r=Math.round(q.a)}}
+      it.x=r2(rej(x));it.y=r2(rej(y));dibujar();break}
+    case"linea":{const o=acc.o,dx=rej(w.x-acc.w0.x),dy=rej(w.y-acc.w0.y);
+      o.x1=r2(acc.orig.x1+dx);o.y1=r2(acc.orig.y1+dy);o.x2=r2(acc.orig.x2+dx);o.y2=r2(acc.orig.y2+dy);dibujar();break}
+    case"extremo":{const k=acc.k,ot=acc.k==="1"?"2":"1";const p=ajustarPunto(w,{x:acc.o["x"+ot],y:acc.o["y"+ot]},sel.k==="c"?"cable":"pared",acc.excl);
+      for(const [z,kk] of acc.lig){z["x"+kk]=p.x;z["y"+kk]=p.y}
+      aviso(fmt(Math.hypot(acc.o.x2-acc.o.x1,acc.o.y2-acc.o.y1))+" m");dibujar();break}
+  }
+});
+async function soltar(e){
+  ptrs.delete(e.pointerId);
+  if(pinch){if(ptrs.size<2)pinch=null;acc=null;return}
+  if(!acc)return;const a=acc;acc=null;const pl=PL();
+  if(a.tipo==="dibujar"&&temp){const t=temp;temp=null;
+    if(t.k==="hab"){const w=Math.abs(t.x2-t.x1),h=Math.abs(t.y2-t.y1);
+      if(w>=.3&&h>=.3){crearHab(Math.min(t.x1,t.x2),Math.min(t.y1,t.y2),w,h)}else dibujar()}
+    else if(Math.hypot(t.x2-t.x1,t.y2-t.y1)>=.1){cambio();
+      const o={id:uid(),x1:t.x1,y1:t.y1,x2:t.x2,y2:t.y2};if(t.k==="cable"){o.c=circ;pl.cables.push(o)}else pl.paredes.push(o);
+      sel={k:t.k==="cable"?"c":"w",id:o.id};fin();panel()}
+    else dibujar();
+    avisoHerr();return}
+  if(a.tipo==="tap"&&!a.movido){const w=aMundo(a.x0,a.y0);
+    if(herr==="medir"){puntoMedida(w);return}
+    if(herr==="texto"){const t=await pedir("Texto (por ejemplo: Cocina, Baño, Dormitorio 1)");if(!t)return;cambio();
+      const it={id:uid(),t:"texto",x:r2(rej(w.x)),y:r2(rej(w.y)),r:0,txt:t};pl.items.push(it);sel={k:"i",id:it.id};fin();panel();return}
+    if(colocar){cambio();let x=r2(rej(w.x)),y=r2(rej(w.y)),r=0;
+      if(["puerta","corredera","ventana"].includes(colocar)){const q=paredCercana(w);if(q){x=r2(q.x);y=r2(q.y);r=Math.round(q.a)}}
+      const it={id:uid(),t:colocar,x,y,r};if(T[colocar].w&&colocar!=="cuadro")it.w=T[colocar].w;
+      pl.items.push(it);sel={k:"i",id:it.id};fin();panel();
+      aviso(T[colocar].n+" añadido · toca otra vez para poner más",1800);return}
+  }
+  if(a.tipo==="pan"&&!a.movido&&herr==="sel"){sel=null;dibujar();panel()}
+  if(a.movido&&["item","linea","extremo","fondo"].includes(a.tipo)){fin();if(a.tipo!=="fondo")aviso("")}
+}
+svg.addEventListener("pointerup",soltar);svg.addEventListener("pointercancel",soltar);
+
+async function crearHab(x,y,w,h,nombre){
+  const pl=PL();cambio();x=r2(x);y=r2(y);w=r2(w);h=r2(h);
+  const pts=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+  for(let i=0;i<4;i++){const a=pts[i],b=pts[(i+1)%4];
+    if(!pl.paredes.some(q=>(q.x1===a[0]&&q.y1===a[1]&&q.x2===b[0]&&q.y2===b[1])||(q.x1===b[0]&&q.y1===b[1]&&q.x2===a[0]&&q.y2===a[1])))
+      pl.paredes.push({id:uid(),x1:a[0],y1:a[1],x2:b[0],y2:b[1]})}
+  if(nombre===undefined)nombre=await pedir("Nombre de la habitación (opcional)","");
+  if(nombre)pl.items.push({id:uid(),t:"texto",x:r2(x+w/2),y:r2(y+h/2),r:0,txt:nombre,sub:fmt(w*h,1)+" m²",s:Math.min(.3,Math.max(.16,Math.min(w,h)/9))});
+  sel=null;fin();panel();
+}
+
+// ---------- Herramientas ----------
+$("herr").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;const h=b.dataset.h;
+  if(h==="simb"){paleta();abrir("vSimb");return}
+  if(h==="resumen"){resumen();abrir("vRes");return}
+  setHerr(h);
+};
+function setHerr(h,col){herr=h;colocar=col||null;medirA=null;
+  for(const b of $("herr").children)b.classList.toggle("on",b.dataset.h===(colocar?"simb":h));
+  if(h!=="sel")sel=null;dibujar();panel();avisoHerr()}
+function abrir(id){$(id).classList.add("on");$(id).firstElementChild.scrollTop=0}
+document.querySelectorAll(".velo:not(#vDlg)").forEach(v=>v.addEventListener("click",e=>{if(e.target===v||e.target.closest("[data-cerrar]"))v.classList.remove("on")}));
+function mini(t){const it={t,x:0,y:0,r:0,w:T[t].w?Math.min(T[t].w,.9):undefined,txt:t==="texto"?"Abc":undefined,s:.3};
+  const vb=t==="escalera"?"-1.3 -1.3 2.6 2.6":["puerta","corredera","ventana"].includes(t)?"-.65 -.85 1.3 1":"-.45 -.35 .9 .7";
+  return `<svg viewBox="${vb}">${simb(it)}</svg>`}
+function paleta(){let h="";
+  for(const g of GRUPOS){h+=`<h3>${g}</h3><div class="rej">`;
+    for(const k in T)if(T[k].g===g)h+=`<button data-t="${k}">${mini(k)}${T[k].n}</button>`;h+="</div>"}
+  $("paleta").innerHTML=h}
+$("paleta").onclick=e=>{const b=e.target.closest("[data-t]");if(!b)return;$("vSimb").classList.remove("on");
+  if(b.dataset.t==="texto"){setHerr("texto");return}setHerr("sel",b.dataset.t)};
+
+// ---------- Panel contextual ----------
+function panel(){
+  const p=$("panel"),pl=PL();let h="";
+  if(colocar){h=`<span class="nom">Poniendo: ${T[colocar].n}</span><button class="pb az" data-a="terminar">Terminar</button>`}
+  else if(herr==="cable"&&!sel){h=`<span class="nom">Circuito:</span>`+CIRC.map(c=>`<button class="circ ${c.id===circ?"on":""}" style="background:${c.c}" data-circ="${c.id}" title="${c.n}"></button>`).join("")+`<span style="width:100%;color:${C.gris};font-size:12px">${CIRC.find(c=>c.id===circ).n}</span>`}
+  else if(herr==="medir"){h=`<span class="nom">Poner a escala</span><button class="pb" data-a="terminar">Cancelar</button>`}
+  else if(herr==="fondo"){h=`<span class="nom">Mover plano</span><button class="pb" data-a="fRot">⟳ Girar 90°</button><button class="pb az" data-a="terminar">Terminar</button>`}
+  else if(herr==="hab"&&!sel){h=`<span class="nom">Por medidas:</span><input id="hW" type="number" inputmode="decimal" step="0.05" placeholder="ancho"> × <input id="hH" type="number" inputmode="decimal" step="0.05" placeholder="largo"> m <button class="pb az" data-a="habMedida">Crear</button>`}
+  else if(sel&&sel.k==="i"){const it=pl.items.find(i=>i.id===sel.id);if(!it){sel=null;return panel()}const d=T[it.t];
+    h=`<span class="nom">${d.n}</span><button class="pb" data-a="rot">⟳ Girar</button>`;
+    if(["puerta","corredera","escalera"].includes(it.t))h+=`<button class="pb" data-a="flip">⇋ Voltear</button>`;
+    if(d.w&&it.t!=="cuadro")h+=`<button class="pb" data-a="w-">−</button><span>${fmt(it.w||d.w)} m</span><button class="pb" data-a="w+">+</button>`;
+    if(d.box||it.t==="texto")h+=`<button class="pb" data-a="txt">✎ Texto</button>`;
+    if(it.t==="texto")h+=`<button class="pb" data-a="s-">A−</button><button class="pb" data-a="s+">A+</button>`;
+    h+=`<button class="pb" data-a="dup">Duplicar</button><button class="pb rojo" data-a="del">Eliminar</button>`}
+  else if(sel&&(sel.k==="w"||sel.k==="c")){const arr=sel.k==="w"?pl.paredes:pl.cables,o=arr.find(z=>z.id===sel.id);if(!o){sel=null;return panel()}
+    const len=Math.hypot(o.x2-o.x1,o.y2-o.y1);
+    h=`<span class="nom">${sel.k==="w"?"Pared":"Cable"}</span><input id="lenIn" type="number" inputmode="decimal" step="0.01" value="${len.toFixed(2)}"> m <button class="pb az" data-a="len">Aplicar</button>`;
+    if(sel.k==="w")h+=`<button class="pb" data-a="grosor">${(o.g||.12)>.15?"Muro grueso":"Tabique"}</button>`;
+    if(sel.k==="c")h+=CIRC.map(c=>`<button class="circ ${c.id===o.c?"on":""}" style="background:${c.c}" data-circ="${c.id}"></button>`).join("");
+    h+=`<button class="pb rojo" data-a="del">Eliminar</button>`}
+  p.innerHTML=h;p.classList.toggle("on",!!h);
+}
+$("panel").onclick=async e=>{
+  const b=e.target.closest("button");if(!b)return;const pl=PL();
+  if(b.dataset.circ){if(sel&&sel.k==="c"){cambio();pl.cables.find(c=>c.id===sel.id).c=b.dataset.circ;circ=b.dataset.circ;fin()}else circ=b.dataset.circ;panel();return}
+  const a=b.dataset.a;
+  if(a==="terminar"){medirA=null;setHerr("sel");return}
+  if(a==="fRot"&&pl.fondo){cambio();pl.fondo.r=((pl.fondo.r||0)+90)%360;fin();return}
+  if(a==="habMedida"){const w=parseFloat(($("hW").value||"").replace(",",".")),h=parseFloat(($("hH").value||"").replace(",","."));
+    if(!(w>0&&h>0)){aviso("Pon el ancho y el largo en metros",2000);return}
+    const r=svg.getBoundingClientRect(),c=aMundo(r.left+r.width/2,r.top+r.height/2);
+    // si hay paredes, colocarla a la derecha de lo dibujado
+    const bd=limites(pl);let x=rej(c.x-w/2),y=rej(c.y-h/2);if(bd){x=rej(bd.x+bd.w);y=rej(bd.y)}
+    await crearHab(x,y,w,h);ajustar();return}
+  if(sel&&sel.k==="i"){const it=pl.items.find(i=>i.id===sel.id),d=T[it.t];
+    if(a==="txt"){const t=await pedir("Texto",it.txt||d.box||"");if(t===null)return;cambio();it.txt=t;if(it.t==="texto"&&it.sub!==undefined){const s=await pedir("Segunda línea (opcional, p. ej. m²)",it.sub||"");if(s!==null)it.sub=s}}
+    else{cambio();
+      if(a==="rot")it.r=((it.r||0)+90)%360;
+      if(a==="flip")it.f=it.f?0:1;
+      if(a==="w-")it.w=r2(Math.max(.4,(it.w||d.w)-.1));
+      if(a==="w+")it.w=r2((it.w||d.w)+.1);
+      if(a==="s-")it.s=r2(Math.max(.1,(it.s||.28)-.04));
+      if(a==="s+")it.s=r2((it.s||.28)+.04);
+      if(a==="dup"){const n={...it,id:uid(),x:r2(it.x+.4),y:r2(it.y+.4)};pl.items.push(n);sel={k:"i",id:n.id}}
+      if(a==="del"){pl.items=pl.items.filter(i=>i!==it);sel=null}}
+    fin();panel();return}
+  if(sel&&(sel.k==="w"||sel.k==="c")){const key=sel.k==="w"?"paredes":"cables",o=pl[key].find(z=>z.id===sel.id);
+    if(a==="len"){const L=parseFloat($("lenIn").value.replace(",","."));if(!(L>0))return;cambio();
+      const len=Math.hypot(o.x2-o.x1,o.y2-o.y1)||1,ux=(o.x2-o.x1)/len,uy=(o.y2-o.y1)/len,ox=o.x2,oy=o.y2;
+      const nx=r2(o.x1+ux*L),ny=r2(o.y1+uy*L);
+      for(const z of pl.paredes.concat(pl.cables))for(const k of[1,2])if(Math.abs(z["x"+k]-ox)<1e-6&&Math.abs(z["y"+k]-oy)<1e-6){z["x"+k]=nx;z["y"+k]=ny}
+    }
+    if(a==="grosor"){cambio();o.g=(o.g||.12)>.15?.12:.25}
+    if(a==="del"){cambio();pl[key]=pl[key].filter(z=>z!==o);sel=null}
+    fin();panel()}
+};
+
+// ---------- Resumen ----------
+function cuentas(pl){const n={};for(const it of pl.items)if(!NO_CUENTA[it.t])n[it.t]=(n[it.t]||0)+1;return n}
+function metros(arr){return arr.reduce((s,w)=>s+Math.hypot(w.x2-w.x1,w.y2-w.y1),0)}
+function textoResumen(){const p=P();let out=`${EMP.marca?EMP.marca+" · ":""}${p.nombre}${p.cliente?" ("+p.cliente+")":""}\n`;
+  const tot={},cab={};
+  for(const pl of p.plantas){const n=cuentas(pl);out+=`\n${pl.nombre.toUpperCase()}\n`;
+    const ks=Object.keys(T).filter(k=>n[k]);if(!ks.length)out+="  (sin mecanismos)\n";
+    for(const k of ks){out+=`  ${T[k].n}: ${n[k]}\n`;tot[k]=(tot[k]||0)+n[k]}
+    for(const c of pl.cables)cab[c.c]=(cab[c.c]||0)+Math.hypot(c.x2-c.x1,c.y2-c.y1)}
+  if(p.plantas.length>1){out+="\nTOTAL\n";for(const k of Object.keys(T))if(tot[k])out+=`  ${T[k].n}: ${tot[k]}\n`}
+  const ck=Object.keys(cab);if(ck.length){out+="\nCABLE DIBUJADO (recorrido en planta)\n";for(const c of CIRC)if(cab[c.id])out+=`  ${c.n}: ${fmt(cab[c.id],1)} m\n`}
+  return out}
+function resumen(){const p=P();let h="";const tot={},cab={};
+  for(const pl of p.plantas){const n=cuentas(pl);h+=`<h3>${esc(pl.nombre)}</h3><table class="lista">`;let alguno=false;
+    for(const k of Object.keys(T))if(n[k]){alguno=true;h+=`<tr><td>${T[k].n}</td><td>${n[k]}</td></tr>`;tot[k]=(tot[k]||0)+n[k]}
+    if(!alguno)h+=`<tr><td style="color:${C.gris}">Sin mecanismos todavía</td><td></td></tr>`;
+    h+=`<tr><td style="color:${C.gris}">Paredes dibujadas</td><td>${fmt(metros(pl.paredes),1)} m</td></tr></table>`;
+    for(const c of pl.cables)cab[c.c]=(cab[c.c]||0)+Math.hypot(c.x2-c.x1,c.y2-c.y1)}
+  if(p.plantas.length>1){h+=`<h3>Total del proyecto</h3><table class="lista">`;for(const k of Object.keys(T))if(tot[k])h+=`<tr><td>${T[k].n}</td><td>${tot[k]}</td></tr>`;h+="</table>"}
+  if(Object.keys(cab).length){h+=`<h3>Cable dibujado (recorrido en planta)</h3><table class="lista">`;
+    for(const c of CIRC)if(cab[c.id])h+=`<tr><td><span class="circ" style="display:inline-block;width:12px;height:12px;border:0;background:${c.c};vertical-align:-1px"></span> ${c.n}</td><td>${fmt(cab[c.id],1)} m</td></tr>`;
+    h+=`</table><p style="font-size:12px;color:${C.gris}">Son metros de recorrido en planta. Para comprar cable suma bajadas a mecanismos y un 10–15 % de margen.</p>`}
+  $("resumen").innerHTML=h}
+$("bCopiar").onclick=async()=>{const t=textoResumen();try{await navigator.clipboard.writeText(t);aviso("Resumen copiado",1800)}catch(e){await pedir("Copia el resumen:",t)}};
+
+// ---------- Proyectos ----------
+function listaProy(){let h="";
+  for(const p of db.proy){const n=p.plantas.reduce((s,pl)=>s+pl.items.filter(i=>!NO_CUENTA[i.t]).length,0);
+    h+=`<div class="fila ${p.id===db.cur?"on":""}"><div class="q" data-abrir="${p.id}"><b>${esc(p.nombre)}</b><small>${esc(p.cliente||"Sin cliente")} · ${p.plantas.length} planta${p.plantas.length>1?"s":""} · ${n} puntos · ${p.fecha||""}</small></div>
+    <button class="pb" data-ren="${p.id}">✎</button><button class="pb" data-dup="${p.id}">⧉</button><button class="pb rojo" data-del="${p.id}">🗑</button></div>`}
+  $("listaProy").innerHTML=h}
+$("bProy").onclick=()=>{listaProy();abrir("vProy")};
+$("listaProy").onclick=async e=>{const t=e.target.closest("[data-abrir],[data-ren],[data-dup],[data-del]");if(!t)return;
+  if(t.dataset.abrir){db.cur=t.dataset.abrir;hist=[];rehacer=[];botonesHist();sel=null;guardar();$("vProy").classList.remove("on");setHerr("sel");ajustar();return}
+  if(t.dataset.ren){const p=db.proy.find(x=>x.id===t.dataset.ren);const n=await pedir("Nombre del plano",p.nombre);if(n===null)return;const c=await pedir("Cliente / dirección",p.cliente||"");p.nombre=n.trim()||p.nombre;if(c!==null)p.cliente=c.trim()}
+  if(t.dataset.dup){const p=db.proy.find(x=>x.id===t.dataset.dup);const n=JSON.parse(JSON.stringify(p));n.id=uid();n.nombre+=" (copia)";db.proy.unshift(n)}
+  if(t.dataset.del){const p=db.proy.find(x=>x.id===t.dataset.del);if(!await confirmar("¿Eliminar el plano «"+p.nombre+"»? No se puede deshacer."))return;
+    db.proy=db.proy.filter(x=>x!==p);if(!db.proy.length)db.proy.push(nuevoProyecto("Plano nuevo"));if(!P()){db.cur=db.proy[0].id;hist=[];rehacer=[];botonesHist()}}
+  guardar();listaProy();dibujar()};
+$("bNuevo").onclick=async()=>{const n=await pedir("Nombre del plano (p. ej. Casa Irina, Nave polígono)","");if(!n)return;const c=await pedir("Cliente o dirección (opcional)","")||"";
+  const p=nuevoProyecto(n.trim(),c.trim());db.proy.unshift(p);db.cur=p.id;hist=[];rehacer=[];botonesHist();sel=null;guardar();$("vProy").classList.remove("on");setHerr("hab");ajustar()};
+
+// ---------- Plano de fondo (foto o imagen de un plano real) ----------
+const IMG={}, IMGDATA={}, cargando={};
+const IDB={p:null,
+  abrir(){return this.p||(this.p=new Promise((ok,ko)=>{try{const r=indexedDB.open("almara-planos",1);r.onupgradeneeded=()=>r.result.createObjectStore("img");r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)}catch(e){ko(e)}}))},
+  async op(modo,fn){const d=await this.abrir();return new Promise((ok,ko)=>{const t=d.transaction("img",modo),r=fn(t.objectStore("img"));t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>ko(t.error)})},
+  get(k){return this.op("readonly",s=>s.get(k))}, set(k,v){return this.op("readwrite",s=>s.put(v,k))}};
+async function cargarImg(id){if(IMG[id]||cargando[id])return;cargando[id]=1;
+  try{let b=await IDB.get(id).catch(()=>null);if(!b){b=await Nube.bajarFoto(id);if(b)await IDB.set(id,b).catch(()=>{})}if(b){IMG[id]=URL.createObjectURL(b);fondoKey="";dibujar()}}catch(e){} delete cargando[id]}
+function cajaFondo(f){const h=f.w*f.ar,rot=((f.r||0)%180)!==0,W=rot?h:f.w,H=rot?f.w:h;return{x:f.cx-W/2,y:f.cy-H/2,w:W,h:H}}
+function fondoSVG(pl,href){const f=pl.fondo;if(!f)return"";const u=href||IMG[f.img];if(!u){cargarImg(f.img);return""}
+  const h=f.w*f.ar;return `<image href="${u}" x="${-f.w/2}" y="${-h/2}" width="${f.w}" height="${h}" opacity="${f.op??.55}" preserveAspectRatio="none" pointer-events="none" transform="translate(${f.cx} ${f.cy}) rotate(${f.r||0})"/>`}
+let fondoKey="";
+function pintarFondo(){const pl=PL(),f=pl.fondo,k=f?[f.img,f.cx,f.cy,f.w,f.r,f.op,!!IMG[f.img]].join("|"):"";if(k===fondoKey)return;fondoKey=k;$("capaF").innerHTML=fondoSVG(pl)}
+async function dataDeImg(id){if(IMGDATA[id])return IMGDATA[id];const b=await IDB.get(id);if(!b)return null;
+  return IMGDATA[id]=await new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b)})}
+async function subirFondo(file){aviso("Cargando plano…");
+  try{const url=URL.createObjectURL(file);const im=new Image();await new Promise((ok,ko)=>{im.onload=ok;im.onerror=ko;im.src=url});
+    const k=Math.min(1,2400/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement("canvas");cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+    const cx=cv.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(url);
+    const blob=await new Promise(ok=>cv.toBlob(ok,"image/jpeg",.82));const id="img-"+uid();
+    Nube.subirFoto(id,blob);
+    try{await IDB.set(id,blob)}catch(e){await avisar("Este navegador no deja guardar la imagen: podrás usarla ahora, pero no quedará guardada.")}
+    IMG[id]=URL.createObjectURL(blob);
+    const pl=PL(),bd=limites({...pl,fondo:null});cambio();
+    const w=bd?Math.max(8,bd.w):10;pl.fondo={img:id,ar:cv.height/cv.width,w,cx:bd?bd.x+bd.w/2:w/2,cy:bd?bd.y+bd.h/2:w*cv.height/cv.width/2,r:0,op:.55};
+    fin();ajustar();$("vFondo").classList.remove("on");aviso("");
+    await avisar("Ahora pon el plano a escala: toca el principio y el final de una medida que conozcas (por ejemplo una pared con su cota) y escribe cuántos metros mide.");
+    setHerr("medir")}catch(e){aviso("");await avisar("No se ha podido abrir esa imagen. Prueba con una foto o captura en JPG o PNG.")}}
+let medirA=null;
+async function puntoMedida(w){
+  if(!medirA){medirA=w;aviso("Ahora toca el final de la medida");dibujar();return}
+  const A=medirA,B=w;medirA=null;const med=Math.hypot(B.x-A.x,B.y-A.y);if(med<.05){avisoHerr();dibujar();return}
+  const t=await pedir(`Esa distancia mide ahora ${fmt(med)} m en el plano. ¿Cuántos metros mide en la realidad?`,"");
+  if(!t){setHerr("sel");return}const real=num(t);if(!(real>0)){await avisar("Escribe la medida en metros, por ejemplo 3,45");setHerr("sel");return}
+  const pl=PL(),f=pl.fondo,k=real/med;cambio();
+  f.w*=k;f.cx=A.x+(f.cx-A.x)*k;f.cy=A.y+(f.cy-A.y)*k;
+  // si ya había cosas dibujadas encima, se escalan con el plano
+  const s=v=>v;const esc_=(x,y)=>({x:r2(A.x+(x-A.x)*k),y:r2(A.y+(y-A.y)*k)});
+  if(pl.paredes.length||pl.items.length||pl.cables.length){if(await confirmar("¿Ajustar también lo que ya has dibujado encima a la nueva escala?")){
+    for(const z of pl.paredes.concat(pl.cables)){const p1=esc_(z.x1,z.y1),p2=esc_(z.x2,z.y2);z.x1=p1.x;z.y1=p1.y;z.x2=p2.x;z.y2=p2.y}
+    for(const it of pl.items){const p=esc_(it.x,it.y);it.x=p.x;it.y=p.y}}}
+  setHerr("sel");fin();ajustar();aviso("Plano a escala ✓ · ya puedes poner símbolos encima",2500)}
+function abrirFondo(){const f=PL().fondo;let h="";
+  if(!f)h=`<p style="font-size:14px;color:${C.gris};margin:0 0 6px">Sube una foto o captura del plano de la casa y dibuja encima los puntos de luz, enchufes, líneas…</p>
+    <button class="big az" id="fdSubir">📷 Subir foto o imagen del plano<small>Desde la galería o haciendo la foto ahora</small></button>
+    <small class="ayuda">Consejo: haz la foto recta, desde arriba y con buena luz. Si el plano es un PDF, haz una captura de pantalla y súbela.</small>`;
+  else h=`<button class="big az" id="fdEscala">📏 Poner a escala<small>Toca dos puntos de una medida conocida</small></button>
+    <button class="big" id="fdMover">✥ Mover el plano<small>Arrastra con un dedo; desde ahí también puedes girarlo</small></button>
+    <h3>Transparencia</h3><input type="range" id="fdOp" min="10" max="100" value="${Math.round((f.op??.55)*100)}" style="width:100%">
+    <button class="big" id="fdCambiar">Cambiar imagen</button><button class="big" id="fdQuitar" style="color:${C.rojo}">Quitar plano de fondo</button>`;
+  $("fondoForm").innerHTML=h+`<input type="file" id="fdFile" accept="image/*" hidden>`;$("vFondo").classList.add("on");
+  const pick=()=>$("fdFile").click();if($("fdSubir"))$("fdSubir").onclick=pick;if($("fdCambiar"))$("fdCambiar").onclick=pick;
+  $("fdFile").onchange=e=>{const fl=e.target.files[0];if(fl)subirFondo(fl)};
+  if(f){$("fdEscala").onclick=()=>{$("vFondo").classList.remove("on");setHerr("medir")};
+    $("fdMover").onclick=()=>{$("vFondo").classList.remove("on");setHerr("fondo")};
+    let ini=false;$("fdOp").oninput=e=>{if(!ini){cambio();ini=true}f.op=e.target.value/100;pintarFondo()};$("fdOp").onchange=()=>guardar();
+    $("fdQuitar").onclick=async()=>{if(!await confirmar("¿Quitar el plano de fondo de esta planta?"))return;cambio();delete PL().fondo;$("vFondo").classList.remove("on");fin()}}}
+
+// ---------- Exportar ----------
+function svgExport(pl,fd){
+  const p=P(),b=limites(pl)||{x:0,y:0,w:4,h:3},n=cuentas(pl);
+  const ks=Object.keys(T).filter(k=>n[k]);const usados=new Set(pl.cables.map(c=>c.c));const circs=CIRC.filter(c=>usados.has(c.id));
+  const m=.8,W=Math.max(b.w+2*m,9),cab=1.3,filas=Math.ceil((ks.length+circs.length)/3),ley=filas?.7+filas*.45:.2,H=cab+b.h+2*m+ley;
+  const ox=(W-b.w)/2-b.x,oy=cab+m-b.y;
+  const T2=(x,y,s,t,c,w,an)=>`<text x="${x}" y="${y}" font-size="${s}" fill="${c}" font-weight="${w||700}" text-anchor="${an||"start"}" dominant-baseline="central" font-family="Helvetica,Arial,sans-serif">${esc(t)}</text>`;
+  let s=`<svg xmlns="${NS}" viewBox="0 0 ${r2(W)} ${r2(H)}" width="${r2(W)*100}" height="${r2(H)*100}"><rect width="${W}" height="${H}" fill="#fff"/>`;
+  s+=`<rect width="${W}" height="${cab}" fill="${C.azul}"/>`+T2(.4,.45,.38,EMP.marca||"","#fff",800)+T2(.4,.92,.17,[EMP.telefono,EMP.email].filter(Boolean).join(" · "),"#B8C7DA",500);
+  s+=T2(W-.4,.45,.26,p.nombre+" · "+pl.nombre,"#fff",700,"end")+T2(W-.4,.92,.17,[p.cliente,new Date().toLocaleDateString("es-ES")].filter(Boolean).join(" · "),"#B8C7DA",500,"end");
+  s+=`<g transform="translate(${ox} ${oy})">${escena(pl,{cotas:true,fondo:fd||(fd===undefined&&pl.fondo?IMG[pl.fondo.img]:null)})}</g>`;
+  if(filas){const y0=cab+b.h+2*m;s+=`<line x1=".4" y1="${y0}" x2="${W-.4}" y2="${y0}" stroke="#DCE3EC" stroke-width=".02"/>`+T2(.4,y0+.3,.17,"LEYENDA Y CANTIDADES",C.gris,700);
+    const cw=(W-.8)/3;let i=0;
+    for(const k of ks){const x=.4+(i%3)*cw,y=y0+.75+Math.floor(i/3)*.45;s+=`<g transform="translate(${x+.25} ${y}) scale(.8)">${simb({t:k,x:0,y:0,r:0,w:T[k].w?.6:undefined})}</g>`+T2(x+.65,y,.16,`${T[k].n} × ${n[k]}`,C.azul,600);i++}
+    for(const c of circs){const x=.4+(i%3)*cw,y=y0+.75+Math.floor(i/3)*.45;const ml=pl.cables.filter(z=>z.c===c.id).reduce((a,z)=>a+Math.hypot(z.x2-z.x1,z.y2-z.y1),0);
+      s+=`<line x1="${x}" y1="${y}" x2="${x+.5}" y2="${y}" stroke="${c.c}" stroke-width=".04" stroke-dasharray=".12 .07"/>`+T2(x+.65,y,.16,`${c.n} · ${fmt(ml,1)} m`,C.azul,600);i++}}
+  return s+"</svg>"}
+async function aPng(pl){const fd=pl.fondo?await dataDeImg(pl.fondo.img).catch(()=>null):null;const s=svgExport(pl,fd);const m=s.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);const W=+m[1],H=+m[2];
+  const k=Math.min(160,Math.max(90,2400/W)),cw=Math.round(W*k),ch=Math.round(H*k);
+  const img=new Image();const url=URL.createObjectURL(new Blob([s],{type:"image/svg+xml"}));
+  await new Promise((ok,ko)=>{img.onload=ok;img.onerror=ko;img.src=url});
+  const cv=document.createElement("canvas");cv.width=cw;cv.height=ch;const cx=cv.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,cw,ch);cx.drawImage(img,0,0,cw,ch);URL.revokeObjectURL(url);
+  return await new Promise(ok=>cv.toBlob(ok,"image/png"))}
+const nombreArchivo=(t,ext)=>("Plano "+P().nombre+(t?" - "+t:"")).replace(/[\\/:*?"<>|]/g,"")+"."+ext;
+async function compartir(files){
+  try{if(navigator.canShare&&navigator.canShare({files})){await navigator.share({files});return}}catch(e){if(e.name==="AbortError")return}
+  for(const f of files){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}}
+$("ePng").onclick=async()=>{aviso("Preparando imagen…");try{const b=await aPng(PL());await compartir([new File([b],nombreArchivo(PL().nombre,"png"),{type:"image/png"})])}catch(e){await avisar("No se ha podido crear la imagen")}aviso("")};
+$("ePngTodas").onclick=async()=>{aviso("Preparando imágenes…");try{const fs=[];for(const pl of P().plantas){const b=await aPng(pl);fs.push(new File([b],nombreArchivo(pl.nombre,"png"),{type:"image/png"}))}await compartir(fs)}catch(e){await avisar("No se han podido crear las imágenes")}aviso("")};
+$("ePdf").onclick=()=>{$("print").innerHTML=P().plantas.map(pl=>svgExport(pl)).join("");$("vExp").classList.remove("on");setTimeout(()=>window.print(),200)};
+$("eJson").onclick=async()=>{const p=JSON.parse(JSON.stringify(P()));for(const pl of p.plantas)if(pl.fondo)pl.fondo.data=await dataDeImg(pl.fondo.img).catch(()=>null);
+  compartir([new File([JSON.stringify({almaraPlanos:1,proyecto:p})],nombreArchivo("","json"),{type:"application/json"})])};
+$("eImp").onclick=()=>$("fImp").click();
+$("fImp").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());const p=d.proyecto||d;if(!p.plantas)throw 0;
+  for(const pl of p.plantas)if(pl.fondo&&pl.fondo.data){const b=await (await fetch(pl.fondo.data)).blob();pl.fondo.img="img-"+uid();try{await IDB.set(pl.fondo.img,b)}catch(e){}Nube.subirFoto(pl.fondo.img,b);IMG[pl.fondo.img]=URL.createObjectURL(b);delete pl.fondo.data}
+  p.id=uid();db.proy.unshift(p);db.cur=p.id;hist=[];rehacer=[];botonesHist();guardar();$("vExp").classList.remove("on");ajustar();aviso("Plano abierto: "+p.nombre,2000)}catch(err){await avisar("Ese archivo no es una copia de planos de esta app")}e.target.value=""};
+$("bExp").onclick=()=>abrir("vExp");
+
+// =====================================================================
+// PRESUPUESTOS
+// =====================================================================
+const LSP="almara-pres-v1", LSE="almara-empresa-v1", LST="almara-tarifas-v1", IVA=0.21;
+// Datos de la empresa: vacíos hasta que cada empresa rellena los suyos en Ajustes
+const EMP_DEF={marca:"",lema:"",titular:"",nie:"",localidad:"",telefono:"",email:"",web:"",zona:"",validez:15,firma:""};
+// Tarifa: p = precio base sin IVA · iva = precio fijo con IVA incluido
+const TARIFA=[
+ {id:"sl",g:"Starlink",c:"Instalación de antena Starlink",d:"Montaje de antena con soporte incluido, configuración y puesta en marcha",iva:175},
+ {id:"wifi",g:"WiFi",c:"Instalación y configuración WiFi mesh",d:"Colocación de nodos, configuración de red y prueba de cobertura",p:70},
+ {id:"wifiext",g:"WiFi",c:"Instalación de punto de acceso WiFi exterior",d:"Montaje en exterior, cableado y configuración",p:70},
+ {id:"red",g:"Redes y racks",c:"Punto de red Cat6",d:"Cable hasta 30 m, caja de superficie y conectores, etiquetado y prueba",p:55},
+ {id:"rack",g:"Redes y racks",c:"Montaje de armario rack y organización",d:"Patch panel, peinado y etiquetado",p:150},
+ {id:"confred",g:"Redes y racks",c:"Configuración de router, switch y WiFi",p:80},
+ {id:"hora",g:"Redes y racks",c:"Hora adicional",d:"Imprevistos, obra difícil o tiradas largas",p:35},
+ {id:"cam",g:"Videovigilancia",c:"Instalación de cámara cableada",p:95},
+ {id:"nvr",g:"Videovigilancia",c:"Configuración del grabador (NVR/DVR) y app en el móvil",p:75},
+ {id:"e_sust",g:"Electricidad · mano de obra",c:"Sustitución de mecanismo en caja existente",p:12},
+ {id:"e_ench",g:"Electricidad · mano de obra",c:"Punto de enchufe nuevo",d:"Desde caja cercana, cableado 2,5 mm2, tubo y caja",p:40},
+ {id:"e_enchT",g:"Electricidad · mano de obra",c:"Punto de enchufe (tubo y caja ya puestos)",d:"Pasar cable 2,5 mm2 y montar mecanismo",p:30},
+ {id:"e_luz",g:"Electricidad · mano de obra",c:"Punto de luz sencillo nuevo",d:"Punto de luz con su interruptor, cableado 1,5 mm2",p:45},
+ {id:"e_luzT",g:"Electricidad · mano de obra",c:"Punto de luz sencillo (tubo y caja ya puestos)",d:"Pasar cable 1,5 mm2 y montar mecanismo",p:35},
+ {id:"e_conm",g:"Electricidad · mano de obra",c:"Punto de luz conmutado",d:"Se enciende desde 2 sitios",p:70},
+ {id:"e_conmT",g:"Electricidad · mano de obra",c:"Punto de luz conmutado (tubo y caja ya puestos)",d:"Se enciende desde 2 sitios",p:55},
+ {id:"e_cruz",g:"Electricidad · mano de obra",c:"Punto de luz con cruzamiento",d:"Se enciende desde 3 sitios o más",p:95},
+ {id:"e_emp",g:"Electricidad · mano de obra",c:"Suplemento instalación empotrada",d:"Roza y tapado básico, sin pintura",p:20},
+ {id:"e_lamp",g:"Electricidad · mano de obra",c:"Colocación de lámpara, plafón o foco",p:20},
+ {id:"e_linea",g:"Electricidad · mano de obra",c:"Línea nueva desde el cuadro",d:"Hasta ~15 m, con su protección en el cuadro",p:110},
+ {id:"e_magn",g:"Electricidad · mano de obra",c:"Sustitución de magnetotérmico o diferencial",p:20},
+ {id:"e_cuadro",g:"Electricidad · mano de obra",c:"Montaje o renovación de cuadro eléctrico",d:"Hasta 8 circuitos, conexionado y etiquetado",p:180},
+ {id:"e_hora",g:"Electricidad · mano de obra",c:"Hora adicional, búsqueda de averías, imprevistos",p:35},
+ {id:"e_min",g:"Electricidad · mano de obra",c:"Servicio mínimo de electricidad",p:50},
+ {id:"m_int",g:"Material eléctrico (Obramat)",c:"Interruptor / conmutador Schneider Asfora blanco",p:3.12},
+ {id:"m_dconm",g:"Material eléctrico (Obramat)",c:"Doble conmutador Schneider Asfora blanco",p:3.87},
+ {id:"m_cruz",g:"Material eléctrico (Obramat)",c:"Cruzamiento Schneider Asfora blanco",p:3.07},
+ {id:"m_puls",g:"Material eléctrico (Obramat)",c:"Pulsador Schneider Asfora blanco",p:2.67},
+ {id:"m_pulsl",g:"Material eléctrico (Obramat)",c:"Pulsador luminoso Schneider Asfora blanco",p:5.67},
+ {id:"m_pers",g:"Material eléctrico (Obramat)",c:"Interruptor de persiana Schneider Asfora blanco",p:7.21},
+ {id:"m_ench",g:"Material eléctrico (Obramat)",c:"Enchufe schuko 16 A Schneider Asfora blanco",p:2.50},
+ {id:"m_enchP",g:"Material eléctrico (Obramat)",c:"Enchufe schuko 16 A Schneider Asfora blanco (pack)",p:2.60},
+ {id:"m_est",g:"Material eléctrico (Obramat)",c:"Enchufe doble estanco IP54 para exterior",p:7.59},
+ {id:"m_rj45",g:"Material eléctrico (Obramat)",c:"Toma de datos RJ45 Cat6 Schneider Asfora blanco",p:7.15},
+ {id:"m_tv",g:"Material eléctrico (Obramat)",c:"Toma TV-R-SAT final Schneider Asfora blanco",p:10.76},
+ {id:"m_tvi",g:"Material eléctrico (Obramat)",c:"Toma TV-SAT intermedia Schneider Asfora blanco",p:15.66},
+ {id:"m_tel",g:"Material eléctrico (Obramat)",c:"Toma de teléfono RJ12 Schneider Asfora blanco",p:3.35},
+ {id:"m_ciega",g:"Material eléctrico (Obramat)",c:"Tapa ciega Schneider Asfora blanco",p:2.02},
+ {id:"m_m2",g:"Material eléctrico (Obramat)",c:"Marco doble Schneider Asfora blanco",p:0.74},
+ {id:"m_m3",g:"Material eléctrico (Obramat)",c:"Marco triple Schneider Asfora blanco",p:1.45},
+ {id:"m_m4",g:"Material eléctrico (Obramat)",c:"Marco cuádruple Schneider Asfora blanco",p:2.62},
+ {id:"m_mg16",g:"Material eléctrico (Obramat)",c:"Magnetotérmico Schneider Resi9 1P+N 16 A",p:3.80},
+ {id:"m_mg25",g:"Material eléctrico (Obramat)",c:"Magnetotérmico Schneider Resi9 1P+N 25 A",p:3.85},
+ {id:"m_c15",g:"Material eléctrico (Obramat)",c:"Cable libre de halógenos H07Z1-K 1,5 mm2 (metros)",p:0.28},
+ {id:"m_c25",g:"Material eléctrico (Obramat)",c:"Cable libre de halógenos H07Z1-K 2,5 mm2 (metros)",p:0.45},
+ {id:"m_c4",g:"Material eléctrico (Obramat)",c:"Cable libre de halógenos H07Z1-K 4 mm2 (metros)",p:0.97},
+ {id:"m_c6",g:"Material eléctrico (Obramat)",c:"Cable libre de halógenos H07Z1-K 6 mm2 (metros)",p:1.41},
+ {id:"m_t16",g:"Material eléctrico (Obramat)",c:"Tubo corrugado 16 mm (metros)",p:0.16},
+ {id:"m_t20",g:"Material eléctrico (Obramat)",c:"Tubo corrugado 20 mm (metros)",p:0.25},
+ {id:"m_t25",g:"Material eléctrico (Obramat)",c:"Tubo corrugado reforzado 25 mm (metros)",p:0.35},
+ {id:"m_caja",g:"Material eléctrico (Obramat)",c:"Caja de mecanismo universal para empotrar",p:0.14},
+ {id:"m_cajap",g:"Material eléctrico (Obramat)",c:"Caja de mecanismo para tabique hueco (pladur)",p:0.55},
+ {id:"mant",g:"Mantenimiento",c:"Cuota de mantenimiento mensual",d:"Soporte remoto, respuesta en 4 h laborables, visita al siguiente día laborable, revisión anual y hasta 3 visitas al año",p:49},
+ {id:"urg",g:"Mantenimiento",c:"Avería urgente sin contrato",d:"Primera hora incluida; después 35 €/h",p:95}
+];
+const NOTA_SL="El kit Starlink (antena y suscripción) lo adquiere el cliente.", NOTA_ASF="Mecanismos Schneider serie Asfora, color blanco.",
+  NOTA_EMP="No incluye pintura ni acabados de yeso.", NOTA_PLANO="Cantidades y metros de cable calculados sobre el plano; la posición final de cada punto se confirmará en obra.";
+let PR={lista:[],sig:28}, EMP={...EMP_DEF}, TOV={}, prCur=null, modo="planos";
+function cargarPres(){try{const a=localStorage.getItem(LSP);if(a)PR=JSON.parse(a);const b=localStorage.getItem(LSE);if(b)EMP={...EMP_DEF,...JSON.parse(b)};const c=localStorage.getItem(LST);if(c)TOV=JSON.parse(c)}catch(e){}}
+function guardarPres(){try{localStorage.setItem(LSP,JSON.stringify(PR));Nube.marcar("presupuestos")}catch(e){aviso("No se ha podido guardar",2500)}}
+function guardarEmp(){try{localStorage.setItem(LSE,JSON.stringify(EMP));localStorage.setItem(LST,JSON.stringify(TOV));Nube.marcar("empresa")}catch(e){aviso("No se ha podido guardar (¿firma muy grande?)",3000)}}
+const tar=id=>{const t=TARIFA.find(x=>x.id===id);if(!t)return null;const o={...t};if(TOV[id]!==undefined){if(t.iva!==undefined)o.iva=TOV[id];else o.p=TOV[id]}return o};
+const eur=v=>{const s=(Math.round(v*100)/100).toFixed(2).split(".");return s[0].replace(/\B(?=(\d{3})+(?!\d))/g,".")+","+s[1]+" €"};
+const num=v=>parseFloat(String(v).replace(",","."));
+const hoy=()=>new Date().toISOString().slice(0,10);
+const fechaES=f=>{const [a,m,d]=f.split("-");return `${d}/${m}/${a}`};
+const masDias=(f,n)=>{const d=new Date(f+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+function siguienteNumero(){const y=new Date().getFullYear(),se=Nube.serie();let mx=se?0:PR.sig-1;
+  for(const p of PR.lista){const m=/^P-(\d{4})-([A-Z]*)(\d+)$/.exec(p.numero||"");if(m&&+m[1]===y&&m[2]===se)mx=Math.max(mx,+m[3])}
+  return `P-${y}-${se}${String(mx+1).padStart(3,"0")}`}
+function nuevoPres(){const p={id:uid(),numero:siguienteNumero(),fecha:hoy(),tipo:"particular",titulo:"",cliente:{nombre:"",nif:"",direccion:"",contacto:"",telefono:"",email:""},partidas:[],notas:[]};PR.lista.unshift(p);guardarPres();return p}
+function partidaDe(t,q){const o={id:uid(),c:t.c,d:t.d||"",q:q||1};if(t.iva!==undefined)o.iva=t.iva;else o.p=t.p;return o}
+function agregar(pr,t,q,concepto){if(!t||!(q>0))return;const c=concepto||t.c;const ex=pr.partidas.find(x=>x.c===c&&(x.iva??null)===(t.iva??null)&&(x.p??null)===(t.p??null));
+  if(ex)ex.q=Math.round((ex.q+q)*100)/100;else{const o=partidaDe(t,q);o.c=c;pr.partidas.push(o)}
+  if(t.id==="sl"&&!pr.notas.includes(NOTA_SL))pr.notas.push(NOTA_SL);
+  if(/^m_/.test(t.id)&&/Asfora/.test(t.c)&&!pr.notas.includes(NOTA_ASF))pr.notas.push(NOTA_ASF);
+  if(t.id==="e_emp"&&!pr.notas.includes(NOTA_EMP))pr.notas.push(NOTA_EMP)}
+// Cálculo idéntico al de los PDF
+function calcular(pr){const part=pr.tipo!=="empresa";let base=0,tci=0;const filas=[];
+  for(const x of pr.partidas){const q=+x.q||0;let bu,fijo=null;
+    if(x.iva!==undefined&&x.iva!==null){fijo=+x.iva;bu=fijo/(1+IVA)}else bu=+x.p||0;
+    bu=r2(bu);const bl=r2(bu*q);let cu,cl;if(fijo!==null){cu=r2(fijo);cl=r2(fijo*q)}else{cu=r2(bu*(1+IVA));cl=r2(bl*(1+IVA))}
+    base+=bl;tci+=cl;filas.push({x,c:x.c,d:x.d,q,unit:part?cu:bu,imp:part?cl:bl})}
+  base=r2(base);let cuota,total;if(part){total=r2(tci);cuota=r2(total-base)}else{cuota=r2(base*IVA);total=r2(base+cuota)}
+  return{filas,base,cuota,total,part}}
+
+// ---------- Desde el plano ----------
+function desdePlano(pr,proy,op){
+  const n={};let cables={};
+  for(const pl of proy.plantas){for(const it of pl.items)n[it.t]=(n[it.t]||0)+1;for(const c of pl.cables)cables[c.c]=(cables[c.c]||0)+Math.hypot(c.x2-c.x1,c.y2-c.y1)}
+  const g=k=>n[k]||0, T_=op.tubo;const add=(id,q,c)=>agregar(pr,tar(id),q,c);
+  const ptsEnch=g("enchufe")+g("doble")+g("usb")+g("encimera")+g("estanco")+g("extractor");
+  const cruces=g("cruce"), conm=Math.max(0,g("luzc")-cruces), senc=g("luz")+g("aplique")+g("exterior"), lamp=g("foco")+g("led");
+  add(T_?"e_enchT":"e_ench",ptsEnch);add(T_?"e_luzT":"e_luz",senc);add(T_?"e_conmT":"e_conm",conm);add("e_cruz",cruces);add("e_lamp",lamp);
+  if(op.empotrado)add("e_emp",ptsEnch+senc+conm+cruces);
+  const LIN={horno:["HORNO","m_c6","m_t25"],vitro:["VITRO","m_c6","m_t25"],lavadora:["LAVADORA","m_c4","m_t20"],lavavaj:["LAVAVAJILLAS","m_c4","m_t20"],secadora:["SECADORA","m_c4","m_t20"],
+    termo:["TERMO","m_c4","m_t20"],aa:["AIRE ACONDICIONADO","m_c25","m_t20"],ve:["CARGADOR VE","m_c6","m_t25"],linea:["OTRA","m_c25","m_t20"],subida:["SUBIDA A PLANTA","m_c25","m_t20"]};
+  for(const k in LIN)if(g(k))add("e_linea",g(k),"Línea nueva desde el cuadro ("+LIN[k][0].toLowerCase()+")");
+  if(g("cuadro"))add("e_cuadro",g("cuadro"));
+  add("red",g("rj45"));add("wifi",g("ap"));if(g("router"))add("confred",1);add("cam",g("camara"));if(g("camara"))add("nvr",1);
+  add("sl",g("starlink"));add("rack",g("rack"));
+  const sinTarifa=["pir","timbre","ptel","tv"].filter(k=>g(k)).map(k=>T[k].n.toLowerCase()+" ("+g(k)+")");
+  if(op.material){
+    const schuko=g("enchufe")+g("doble")*2+g("usb")+g("encimera")+g("extractor");add(schuko>=5?"m_enchP":"m_ench",schuko);add("m_m2",g("doble"));add("m_est",g("estanco"));
+    let mandos=g("inter")+g("conm");if(!mandos)mandos=senc+conm*2;add("m_int",mandos);add("m_cruz",cruces);add("m_puls",g("puls"));add("m_pers",g("persiana"));
+    add("m_rj45",g("rj45"));add("m_tv",g("tv"));
+    // cable
+    const m={m_c15:0,m_c25:0,m_c4:0,m_c6:0},tub={m_t16:0,m_t20:0,m_t25:0};
+    const dib=Object.keys(cables).length>0;
+    if(dib){const MAP={c1:"m_c15",c2:"m_c25",c5:"m_c25",c6:"m_c25",c0:"m_c25",c4:"m_c4",c3:"m_c6"};
+      for(const k in cables)if(MAP[k])m[MAP[k]]+=cables[k]*3*1.1;
+      if(!T_){for(const k in cables){if(k==="c7")continue;const t=k==="c1"?"m_t16":k==="c3"?"m_t25":"m_t20";tub[t]+=cables[k]*1.1}}}
+    else{m.m_c25+=ptsEnch*18;m.m_c15+=senc*24+(conm+cruces)*40;if(!T_){tub.m_t20+=ptsEnch*6;tub.m_t16+=senc*8+(conm+cruces)*12}
+      for(const k in LIN)if(g(k)){m[LIN[k][1]]+=45*g(k);if(!T_)tub[LIN[k][2]]+=15*g(k)}}
+    for(const k in m)add(k,Math.ceil(m[k]));for(const k in tub)add(k,Math.ceil(tub[k]));
+    if(!T_)add("m_caja",ptsEnch+senc+(conm+cruces)*2);
+    if(!pr.notas.includes(NOTA_PLANO))pr.notas.push(NOTA_PLANO)}
+  const cliP=proy.clienteId&&Nube.clientes().find(c=>c.id===proy.clienteId);if(cliP&&!pr.cliente.nombre)ponerCliente(pr,cliP);
+  if(!pr.cliente.nombre&&proy.cliente)pr.cliente.nombre=proy.cliente;
+  if(!pr.titulo)pr.titulo="Instalación eléctrica"+(proy.nombre?" · "+proy.nombre:"");
+  pr.plano=proy.id;if(Array.isArray(pr.planos)&&!pr.planos.includes(proy.id))pr.planos.push(proy.id);return sinTarifa}
+
+async function firmaJPG(){if(!EMP.firma)return null;const img=new Image();await new Promise((ok,ko)=>{img.onload=ok;img.onerror=ko;img.src=EMP.firma});
+  const cv=document.createElement("canvas");cv.width=img.naturalWidth;cv.height=img.naturalHeight;const cx=cv.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(img,0,0);
+  return{jpg:atob(cv.toDataURL("image/jpeg",.9).split(",")[1]),w:cv.width,h:cv.height}}
+async function pdfPresupuesto(pr){
+  const AZ="#0B1F3A",AC="#1E88E5",GR="#5F6B7A",LI="#D9DEE5",FO="#F3F6FA",BL="#FFFFFF";
+  const {filas,base,cuota,total,part}=calcular(pr),pdf=new MiniPDF(),E=EMP,cl=pr.cliente||{};
+  const cab=()=>{pdf.rect(0,0,210,34,AZ);pdf.rect(0,34,210,1.2,AC);pdf.txt(18,19,E.marca,26,1,BL);pdf.txt(18,26,(E.lema||"").toUpperCase(),8.5,0,"#B9C7DA");
+    pdf.txt(192,17,"PRESUPUESTO",15,1,BL,"r");pdf.txt(192,24,pr.numero,9.5,0,BL,"r");
+    pdf.linea(18,281,192,281,LI,.5);pdf.txt(18,286,[E.marca,E.localidad,E.telefono,E.email,E.web].filter(Boolean).join(" · "),7.5,0,GR);pdf.txt(192,286,"Página "+pdf.pags.length,7.5,0,GR,"r")};
+  cab();let y=42;
+  const col=(x,w,lab,lineas)=>{let yy=y+3;pdf.txt(x,yy,lab,7.5,1,AC);yy+=1.2;
+    for(const [t,b,s] of lineas)for(const l of partir(t,s,b,w)){yy+=s>9?4.6:4.06;pdf.txt(x,yy,l,s,b,s>9?AZ:GR)}return yy};
+  const y1=col(18,56,"EMISOR",[[E.marca,1,9.5],[E.titular+(E.nie?" · NIF "+E.nie:""),0,8.5],[E.localidad,0,8.5],[E.telefono+" · "+E.email,0,8.5]]);
+  const lc=[[cl.nombre||"—",1,9.5]];for(const [k,pre] of [["contacto","Att.: "],["nif","NIF/CIF: "],["direccion",""],["telefono","Tel.: "],["email",""]])if(cl[k])lc.push([pre+cl[k],0,8.5]);
+  const y2=col(76,70,"CLIENTE",lc);
+  let yy=y+3;pdf.txt(148,yy,"DATOS",7.5,1,AC);yy+=1.2;
+  for(const [a,b] of [["Fecha: ",fechaES(pr.fecha)],["Válido hasta: ",fechaES(masDias(pr.fecha,+E.validez||15))],["Nº: ",pr.numero]]){yy+=4.06;const w=pdf.txt(148,yy,a,8.5,0,GR);pdf.txt(148+w,yy,b,8.5,1,GR)}
+  y=Math.max(y1,y2,yy)+8;
+  if(pr.titulo){for(const l of partir(pr.titulo,14,1,174)){y+=5.5;pdf.txt(18,y,l,14,1,AZ)}y+=5}
+  const enc=()=>{pdf.rect(18,y,174,7.5,AZ);const b=y+5;pdf.txt(20,b,"Concepto",9,1,BL);pdf.txt(132,b,"Cant.",9,1,BL,"r");pdf.txt(162,b,part?"Precio (IVA incl.)":"Precio",9,1,BL,"r");pdf.txt(190,b,"Importe",9,1,BL,"r");y+=7.5};
+  enc();
+  filas.forEach((f,i)=>{const lc_=partir(f.c,9.5,1,96),ld=f.d?partir(f.d,8.5,0,96):[];const h=3.4+lc_.length*4.4+ld.length*4.06;
+    if(y+h>272){pdf.nueva();cab();y=42;enc()}
+    if(i%2===1)pdf.rect(18,y,174,h,FO);let ty=y+1.7;
+    for(const l of lc_){ty+=4.4;pdf.txt(20,ty-1,l,9.5,1,AZ)}for(const l of ld){ty+=4.06;pdf.txt(20,ty-1,l,8.5,0,GR)}
+    const cy=y+h/2+1.2,qs=Number.isInteger(f.q)?String(f.q):String(f.q).replace(".",",");
+    pdf.txt(132,cy,qs,9,0,AZ,"r");pdf.txt(162,cy,eur(f.unit),9,0,AZ,"r");pdf.txt(190,cy,eur(f.imp),9,0,AZ,"r");
+    y+=h;pdf.linea(18,y,192,y,LI,.5)});
+  y+=5;if(y+24>272){pdf.nueva();cab();y=42}
+  if(part){pdf.rect(18,y,174,10,AC);pdf.txt(21,y+6.6,"TOTAL (IVA incluido)",12,1,BL);pdf.txt(189,y+6.6,eur(total),12,1,BL,"r");
+    pdf.txt(189,y+15,`Base imponible ${eur(base)} · IVA 21 % ${eur(cuota)}`,8,0,GR,"r");y+=19}
+  else{const x0=118;pdf.txt(x0+2,y+5,"Base imponible",9.5,0,AZ);pdf.txt(190,y+5,eur(base),9.5,0,AZ,"r");y+=7.5;pdf.linea(x0,y,192,y,LI,.5);
+    pdf.txt(x0+2,y+5,"IVA (21 %)",9.5,0,AZ);pdf.txt(190,y+5,eur(cuota),9.5,0,AZ,"r");y+=7.5;pdf.linea(x0,y,192,y,LI,.5);
+    pdf.rect(x0,y,74,9,AC);pdf.txt(x0+2,y+6.2,"TOTAL",12,1,BL);pdf.txt(190,y+6.2,eur(total),12,1,BL,"r");y+=13}
+  y+=6;
+  const cond=[`Presupuesto válido durante ${E.validez||15} días desde su fecha.`,].concat(E.zona?[`Desplazamiento incluido en: ${E.zona}.`]:[]).concat(pr.notas.filter(n=>n.trim()));
+  const adj=planosDe(pr).map(id=>db.proy.find(p=>p.id===id)).filter(Boolean);if(adj.length)cond.push(adj.length>1?"Se adjuntan los planos de la instalación con la ubicación de cada punto.":"Se adjunta el plano de la instalación con la ubicación de cada punto.");
+  const lcond=cond.map(c=>partir("• "+c,8.5,0,174));const hc=6+lcond.flat().length*4.06;
+  if(y+hc+30>275){pdf.nueva();cab();y=42}
+  pdf.txt(18,y,"CONDICIONES",7.5,1,AC);y+=1;for(const g of lcond)for(const l of g){y+=4.06;pdf.txt(18,y,l,8.5,0,GR)}
+  y+=9;pdf.txt(18,y,"ACEPTACIÓN DEL CLIENTE",7.5,1,AC);pdf.txt(112,y,E.marca,7.5,1,AC);y+=4.5;
+  pdf.txt(18,y,"Firma y fecha:",8.5,0,GR);const wf=pdf.txt(112,y,"Firma:",8.5,0,GR);
+  const f=await firmaJPG().catch(()=>null);
+  if(f){const esc=Math.min(15.5/f.h,53/f.w);pdf.imagen(f.jpg,f.w,f.h,112+wf+5,y+1,f.w*esc,f.h*esc)}
+  const en=pr.enlace;if(en&&en.estado==="aceptado"&&en.firma_png){const fc=await aJPG(en.firma_png,600,.9).catch(()=>null);
+    if(fc){const e2=Math.min(13/fc.h,45/fc.w);pdf.imagen(fc.jpg,fc.w,fc.h,18+26,y+1,fc.w*e2,fc.h*e2)}
+    pdf.txt(18,y+22,`Aceptado online el ${new Date(en.respondido).toLocaleDateString("es-ES")} por ${en.firma_nombre||"el cliente"}${en.firma_dni?" (DNI "+en.firma_dni+")":""}`,7.5,0,GR)}
+  pdf.linea(18,y+18,98,y+18,GR,.6);pdf.linea(112,y+18,192,y+18,GR,.6);
+  // Planos adjuntos: una página por planta, en horizontal o vertical según la forma del plano
+  for(const proy of adj)for(const pl of proy.plantas){if(!pl.paredes.length&&!pl.items.length&&!pl.cables.length&&!pl.fondo)continue;
+    const im=await planoJPG(pl).catch(()=>null);if(!im)continue;pdf.nueva(im.w>im.h);const W=pdf.W,H=pdf.H;
+    pdf.rect(0,0,W,12,AZ);pdf.txt(12,7.8,"PLANO ADJUNTO · "+proy.nombre+" · "+pl.nombre,9,1,BL);pdf.txt(W-12,7.8,pr.numero,9,0,BL,"r");
+    const e=Math.min((W-20)/im.w,(H-30)/im.h),w=im.w*e,h=im.h*e;pdf.imagen(im.jpg,im.w,im.h,(W-w)/2,16,w,h);
+    pdf.txt(12,H-6,[E.marca,E.telefono,E.email,E.web].filter(Boolean).join(" · "),7.5,0,GR);pdf.txt(W-12,H-6,"Página "+pdf.pags.length,7.5,0,GR,"r")}
+  return pdf.salida()}
+function planosDe(pr){const ok=id=>db.proy.some(p=>p.id===id);if(Array.isArray(pr.planos))return pr.planos.filter(ok);
+  const s=new Set();if(pr.plano)s.add(pr.plano);if(pr.clienteId)for(const p of db.proy)if(p.clienteId===pr.clienteId)s.add(p.id);return[...s].filter(ok)}
+async function planoJPG(pl,max,cal){const fd=pl.fondo?await dataDeImg(pl.fondo.img).catch(()=>null):null;const s=svgExport(pl,fd);
+  const m=s.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/),W=+m[1],H=+m[2],k=Math.min(150,(max||2400)/Math.max(W,H));
+  const url=URL.createObjectURL(new Blob([s],{type:"image/svg+xml"}));
+  try{const im=new Image();await new Promise((ok,ko)=>{im.onload=ok;im.onerror=ko;im.src=url});const cv=document.createElement("canvas");cv.width=Math.round(W*k);cv.height=Math.round(H*k);
+    const cx=cv.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(im,0,0,cv.width,cv.height);
+    return{jpg:atob(cv.toDataURL("image/jpeg",cal||.88).split(",")[1]),w:cv.width,h:cv.height}}finally{URL.revokeObjectURL(url)}}
+let verTodosPl=false;
+function pintarPlanosAdj(){const p=prCur,el=$("planosAdj");if(!p||!el)return;const sel=new Set(planosDe(p));
+  const cand=db.proy.filter(x=>verTodosPl||sel.has(x.id)||x.id===p.plano||(p.clienteId&&x.clienteId===p.clienteId));
+  let h=cand.length?cand.map(x=>{const n=x.plantas.reduce((s,pl)=>s+pl.items.length,0);return`<label class="chk tarjeta" style="margin:0 0 8px!important"><input type="checkbox" data-plan="${x.id}" ${sel.has(x.id)?"checked":""}><span style="flex:1"><b style="display:block;font-size:14px;color:var(--azul)">📐 ${esc(x.nombre)}</b><small style="color:var(--gris)">${x.plantas.length} planta${x.plantas.length>1?"s":""} · ${n} elementos</small></span></label>`}).join("")
+    :`<p class="vacio" style="padding:8px">No hay planos de este cliente.</p>`;
+  if(!verTodosPl&&db.proy.length>cand.length)h+=`<button class="pb" data-pa="todosPl" style="width:100%;padding:10px">Elegir otro plano</button>`;
+  el.innerHTML=h}
+
+// ---------- Interfaz de presupuestos ----------
+function setModo(m){if(m==="pres")refrescarEnlaces();modo=m;$("app").classList.toggle("mpres",m==="pres");
+  for(const b of document.querySelectorAll(".modo button"))b.classList.toggle("on",b.dataset.m===m);
+  if(m==="pres"){prCur?editorPres():listaPres()}else{dibujar();ajustar()}}
+document.querySelector(".modo").onclick=e=>{const b=e.target.closest("[data-m]");if(b)setModo(b.dataset.m)};
+// ---------- Envío por enlace para aceptar online ----------
+function etiquetaEnlace(p){const e=p.enlace;if(!e)return"";const m={enviado:["#E3F0FC","#1E88E5",e.visto?"Visto por el cliente":"Enviado"],aceptado:["#E3F4EA","#2E9D5B","✓ Aceptado"],rechazado:["#FDECEC","#C62828","Rechazado"]}[e.estado]||["#EEF2F7","#5F6B7A",e.estado];
+  return `<span style="display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:9px;background:${m[0]};color:${m[1]}">${m[2]}</span>`}
+function pintarEnlace(){const el=$("enlaceBox");if(!el||!prCur)return;const e=prCur.enlace;
+  if(!Nube.configurado()){el.innerHTML="";return}
+  if(!e){el.innerHTML=`<button class="big az" data-pa="enlace" style="margin-top:12px">🔗 Enviar al cliente para que lo acepte<small>Le llega un enlace: lo ve en el móvil y lo acepta con su firma</small></button>`;return}
+  const f=d=>d?new Date(d).toLocaleDateString("es-ES")+" "+new Date(d).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}):"";
+  let est=e.estado==="aceptado"?`<b style="color:#2E9D5B">✓ Aceptado</b> el ${f(e.respondido)} por ${esc(e.firma_nombre||"el cliente")}${e.firma_dni?" · DNI "+esc(e.firma_dni):""}${e.comentario?`<br><i>«${esc(e.comentario)}»</i>`:""}`
+    :e.estado==="rechazado"?`<b style="color:#C62828">Rechazado</b> el ${f(e.respondido)}${e.comentario?`<br>Motivo: <i>«${esc(e.comentario)}»</i>`:""}`
+    :`<b style="color:#1E88E5">Enviado</b> el ${f(e.enviado)} · ${e.visto?"visto el "+f(e.visto):"todavía no lo ha abierto"}`;
+  el.innerHTML=`<h3>Aceptación online</h3><div class="caja" style="font-size:14px;line-height:1.5">${est}${e.estado==="aceptado"&&e.firma_png?`<br><img src="${e.firma_png}" style="max-height:60px;margin-top:6px">`:""}
+    <div class="g2 bots"><button class="pb" data-pa="copiarEnlace">Copiar enlace</button><button class="pb az" data-pa="enlace">${e.estado==="enviado"?"Actualizar y reenviar":"Enviar enlace nuevo"}</button></div></div>`}
+async function snapshotPres(pr){const k=calcular(pr),E=EMP;
+  const adj=planosDe(pr).map(id=>db.proy.find(p=>p.id===id)).filter(Boolean),planos=[];
+  for(const proy of adj.slice(0,3))for(const pl of proy.plantas){if(planos.length>=4)break;if(!pl.paredes.length&&!pl.items.length&&!pl.fondo)continue;
+    const im=await planoJPG(pl,1500,.75).catch(()=>null);if(im)planos.push({nombre:proy.nombre+" · "+pl.nombre,img:"data:image/jpeg;base64,"+btoa(im.jpg)})}
+  const cond=[`Presupuesto válido durante ${E.validez||15} días desde su fecha.`,].concat(E.zona?[`Desplazamiento incluido en: ${E.zona}.`]:[]).concat(pr.notas.filter(n=>n.trim()));
+  return{fecha:pr.fecha,validoHasta:masDias(pr.fecha,+E.validez||15),tipo:pr.tipo,titulo:pr.titulo,cliente:pr.cliente,part:k.part,base:k.base,cuota:k.cuota,total:k.total,
+    filas:k.filas.map(f=>({c:f.c,d:f.d||"",q:f.q,unit:f.unit,imp:f.imp})),condiciones:cond,planos,
+    empresa:{marca:E.marca,lema:E.lema,titular:E.titular,nie:E.nie,localidad:E.localidad,telefono:E.telefono,email:E.email,web:E.web,firma:E.firma}}}
+async function enviarEnlace(){const p=prCur;if(!Nube.sesion()){await avisar("Para enviar enlaces tienes que entrar con tu cuenta (nube conectada).");return}
+  if(!p.partidas.length){await avisar("El presupuesto no tiene partidas todavía.");return}
+  if(p.enlace&&p.enlace.estado!=="enviado"){if(!await confirmar(`Este presupuesto ya está ${p.enlace.estado}. ¿Enviar un enlace nuevo con la versión actual? El cliente tendrá que volver a responder.`))return;p.enlace=null}
+  const token=p.enlace?p.enlace.token:crypto.randomUUID();aviso("Preparando enlace…",8000);
+  try{const datos=await snapshotPres(p);
+    await Nube.api("presupuestos_publicos?on_conflict=token",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({token,numero:p.numero,datos})});
+    p.enlace={...(p.enlace||{}),token,estado:"enviado",enviado:new Date().toISOString()};guardarPres();pintarEnlace();aviso("")}
+  catch(e){aviso("");await avisar("No se ha podido crear el enlace. Comprueba la conexión y que hayas ejecutado el segundo archivo SQL en Supabase.\n\n"+e.message);return}
+  const url=location.origin+"/p/?c="+token,nom=(p.cliente.contacto||p.cliente.nombre||"").split(" ")[0];
+  const txt=`Hola${nom?" "+nom:""}, te envío el presupuesto ${p.numero} de ${EMP.marca}${p.titulo?" ("+p.titulo+")":""}. Puedes verlo y aceptarlo desde aquí:\n${url}`;
+  try{if(navigator.share){await navigator.share({title:"Presupuesto "+p.numero,text:txt});return}}catch(e){if(e.name==="AbortError")return}
+  try{await navigator.clipboard.writeText(txt);await avisar("Mensaje copiado. Pégalo en WhatsApp o en un correo para el cliente.")}catch(e){await pedir("Copia este mensaje para el cliente:",txt)}}
+async function refrescarEnlaces(){if(!Nube.sesion()||!PR.lista.some(p=>p.enlace))return;
+  const rows=await Nube.api("presupuestos_publicos?select=token,estado,respondido,visto,firma_nombre,firma_dni,firma_png,comentario").catch(()=>null);if(!rows)return;
+  let ch=false;for(const p of PR.lista){if(!p.enlace)continue;const r=rows.find(x=>x.token===p.enlace.token);if(!r)continue;
+    const n={...p.enlace,estado:r.estado,respondido:r.respondido,visto:r.visto,firma_nombre:r.firma_nombre,firma_dni:r.firma_dni,comentario:r.comentario,firma_png:r.estado==="aceptado"?r.firma_png:undefined};
+    if(JSON.stringify(n)!==JSON.stringify(p.enlace)){p.enlace=n;ch=true}}
+  if(ch){guardarPres();if(modo==="pres"){prCur?pintarEnlace():listaPres()}}}
+function listaPres(){prCur=null;const tot=p=>calcular(p).total;let h=`<div class="pcont">
+  <button class="big az" data-pa="nuevo">＋ Nuevo presupuesto</button>
+  <button class="big" data-pa="nuevoPlano">▦ Nuevo desde un plano<small>Cuenta enchufes, luces, líneas y cable del plano y aplica tus tarifas</small></button>
+  <h3>Presupuestos guardados</h3>`;
+  if(!PR.lista.length)h+=`<p class="vacio">Todavía no hay presupuestos en este móvil.</p>`;
+  for(const p of PR.lista)h+=`<div class="fila tarjeta" data-abrir="${p.id}"><div class="q"><b>${esc(p.numero)} · ${esc(p.cliente.nombre||"Sin cliente")}</b><small>${esc(p.titulo||"Sin título")} · ${fechaES(p.fecha)}</small>${etiquetaEnlace(p)}</div><b class="imp">${eur(tot(p))}</b></div>`;
+  h+=Nube.esTecnico()||Nube.verComo()?`</div>`:`<button class="big" data-pa="ajustes" style="margin-top:18px">⚙ Datos de empresa, firma y tarifas</button></div>`;
+  $("pres").innerHTML=h;$("nomProy").textContent="Presupuestos";$("pres").scrollTop=0}
+function editorPres(){const p=prCur;$("nomProy").textContent=p.numero;const c=p.cliente;
+  $("pres").innerHTML=`<div class="pcont">
+  <button class="volver" data-pa="volver">‹ Presupuestos</button>
+  <div class="caja"><div class="g2"><label>Número<input data-f="numero" value="${esc(p.numero)}"></label><label>Fecha<input type="date" data-f="fecha" value="${p.fecha}"></label></div>
+  <div class="seg"><button data-tipo="particular" class="${p.tipo!=="empresa"?"on":""}">Particular<small>IVA incluido</small></button><button data-tipo="empresa" class="${p.tipo==="empresa"?"on":""}">Empresa<small>IVA desglosado</small></button></div>
+  <label>Título<input data-f="titulo" value="${esc(p.titulo)}" placeholder="p. ej. Instalación eléctrica vivienda"></label></div>
+  <div id="enlaceBox"></div>
+  <h3>Cliente <button class="mas" data-pa="elegirCli">👥 De mis clientes</button></h3><div class="caja">
+  <label>Nombre o razón social<input data-c="nombre" value="${esc(c.nombre)}"></label>
+  <div class="g2"><label>NIF/CIF<input data-c="nif" value="${esc(c.nif)}"></label><label>Teléfono<input data-c="telefono" inputmode="tel" value="${esc(c.telefono)}"></label></div>
+  <label>Dirección<input data-c="direccion" value="${esc(c.direccion)}"></label>
+  <div class="g2"><label>Persona de contacto<input data-c="contacto" value="${esc(c.contacto)}"></label><label>Email<input data-c="email" inputmode="email" value="${esc(c.email)}"></label></div></div>
+  <h3>Partidas</h3><div id="partidas"></div>
+  <div class="g2 bots"><button class="pb az" data-pa="tarifa">＋ De la tarifa</button><button class="pb" data-pa="plano">▦ Del plano</button><button class="pb" data-pa="libre">＋ Partida libre</button><button class="pb" data-pa="material">＋ Material (coste + margen)</button></div>
+  <h3>Planos adjuntos al PDF</h3><div id="planosAdj"></div>
+  <h3>Condiciones del trabajo</h3><div class="caja"><textarea data-f="notas" rows="4" placeholder="Una por línea">${esc(p.notas.join("\n"))}</textarea>
+  <small class="ayuda">La validez de ${EMP.validez} días y el desplazamiento incluido ya salen siempre en el PDF.</small></div>
+  <div class="g2 bots"><button class="pb" data-pa="duplicar">Duplicar</button><button class="pb rojo" data-pa="borrar">Eliminar presupuesto</button></div>
+  <div style="height:90px"></div></div>
+  <div class="barraTotal"><div><small id="totLab"></small><b id="totVal"></b></div><button class="pb az" data-pa="pdf">PDF</button></div>`;
+  pintarPartidas();verTodosPl=false;pintarPlanosAdj();pintarEnlace()}
+function pintarPartidas(){const p=prCur,k=calcular(p);let h="";
+  if(!k.filas.length)h=`<p class="vacio">Añade partidas de tu tarifa o cárgalas desde un plano.</p>`;
+  for(const f of k.filas)h+=`<div class="part" data-part="${f.x.id}"><div class="pc"><b>${esc(f.c)}</b>${f.d?`<small>${esc(f.d)}</small>`:""}</div>
+    <div class="pq"><button data-q="-">−</button><span>${String(f.q).replace(".",",")}</span><button data-q="+">+</button></div>
+    <div class="pi"><small>${eur(f.unit)}</small><b>${eur(f.imp)}</b></div></div>`;
+  $("partidas").innerHTML=h;
+  $("totLab").textContent=k.part?`Base ${eur(k.base)} · IVA ${eur(k.cuota)}`:`Base ${eur(k.base)} + IVA ${eur(k.cuota)}`;
+  $("totVal").textContent="Total "+eur(k.total)+(k.part?" (IVA incl.)":"")}
+$("pres").addEventListener("change",e=>{const t=e.target;if(!t.dataset.plan||!prCur)return;
+  prCur.planos=[...document.querySelectorAll("[data-plan]:checked")].map(x=>x.dataset.plan);guardarPres()});
+$("pres").addEventListener("input",e=>{const t=e.target,p=prCur;if(!p)return;
+  if(t.dataset.f){if(t.dataset.f==="notas")p.notas=t.value.split("\n");else p[t.dataset.f]=t.value}
+  if(t.dataset.c)p.cliente[t.dataset.c]=t.value;
+  if(t.dataset.f==="numero")$("nomProy").textContent=t.value;guardarPres()});
+$("pres").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-pa],[data-abrir],[data-tipo],[data-q],[data-part]");if(!b)return;
+  if(b.dataset.abrir){prCur=PR.lista.find(x=>x.id===b.dataset.abrir);editorPres();$("pres").scrollTop=0;return}
+  if(b.dataset.tipo){prCur.tipo=b.dataset.tipo;guardarPres();for(const x of document.querySelectorAll("[data-tipo]"))x.classList.toggle("on",x===b);pintarPartidas();return}
+  if(b.dataset.q){const id=b.closest("[data-part]").dataset.part,x=prCur.partidas.find(z=>z.id===id);x.q=Math.max(0,Math.round((x.q+(b.dataset.q==="+"?1:-1))*100)/100);
+    if(x.q===0&&await confirmar("¿Quitar «"+x.c+"»?"))prCur.partidas=prCur.partidas.filter(z=>z!==x);else if(x.q===0)x.q=1;guardarPres();pintarPartidas();return}
+  if(b.dataset.part){editarPartida(prCur.partidas.find(z=>z.id===b.dataset.part));return}
+  const a=b.dataset.pa;
+  if(a==="nuevo"){prCur=nuevoPres();editorPres();return}
+  if(a==="elegirCli"){elegirCliente();return}
+  if(a==="todosPl"){verTodosPl=true;pintarPlanosAdj();return}
+  if(a==="enlace"){enviarEnlace();return}
+  if(a==="copiarEnlace"){const u=location.origin+"/p/?c="+prCur.enlace.token;try{await navigator.clipboard.writeText(u);aviso("Enlace copiado",1500)}catch(e){await pedir("Copia el enlace:",u)}return}
+  if(a==="nuevoPlano"){abrirImport(true);return}
+  if(a==="volver"){listaPres();return}
+  if(a==="ajustes"){abrirAjustes();return}
+  if(a==="tarifa"){abrirTarifa();return}
+  if(a==="plano"){abrirImport(false);return}
+  if(a==="libre"){const o={id:uid(),c:"",d:"",q:1,p:0};editarPartida(o,true);return}
+  if(a==="material"){const o={id:uid(),c:"",d:"",q:1,p:0,coste:"",margen:15};editarPartida(o,true,true);return}
+  if(a==="duplicar"){const n=JSON.parse(JSON.stringify(prCur));n.id=uid();n.numero=siguienteNumero();n.fecha=hoy();PR.lista.unshift(n);prCur=n;guardarPres();editorPres();aviso("Copia creada: "+n.numero,2000);return}
+  if(a==="borrar"){if(!await confirmar("¿Eliminar el presupuesto "+prCur.numero+"?"))return;PR.lista=PR.lista.filter(x=>x!==prCur);guardarPres();listaPres();return}
+  if(a==="pdf"){if(!prCur.partidas.length){await avisar("El presupuesto no tiene partidas todavía.");return}
+    aviso("Creando PDF…");try{const blob=await pdfPresupuesto(prCur);const nom=("Presupuesto_"+prCur.numero+(prCur.cliente.nombre?"_"+prCur.cliente.nombre:"")).replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g,"_")+".pdf";
+      await compartir([new File([blob],nom,{type:"application/pdf"})])}catch(err){await avisar("No se ha podido crear el PDF")}aviso("");return}
+});
+// Hoja: editar partida
+function editarPartida(x,nueva,material){
+  const v=$("vPart"),fijo=x.iva!==undefined&&x.iva!==null;
+  $("partForm").innerHTML=`<label>Concepto<input id="pfC" value="${esc(x.c)}"></label><label>Descripción (opcional)<input id="pfD" value="${esc(x.d||"")}"></label>
+   <div class="g2"><label>Cantidad<input id="pfQ" type="number" inputmode="decimal" step="any" value="${x.q}"></label>
+   <label>${fijo?"Precio con IVA (€)":"Precio sin IVA (€)"}<input id="pfP" type="number" inputmode="decimal" step="any" value="${fijo?x.iva:x.p}"></label></div>
+   ${material?`<div class="caja" style="margin-top:8px"><b style="font-size:13px">Calcular desde lo que te cuesta</b><div class="g2"><label>Coste con IVA (€)<input id="pfCo" type="number" inputmode="decimal" step="any" value="${x.coste||""}"></label><label>Margen %<input id="pfM" type="number" inputmode="decimal" value="${x.margen??15}"></label></div><small class="ayuda">Precio = coste ÷ 1,21 × (1 + margen). Material eléctrico 10 %, resto 15 %. El coste no sale en el PDF.</small></div>`:""}
+   <label class="chk"><input type="checkbox" id="pfF" ${fijo?"checked":""}> El precio ya incluye IVA (como Starlink 175 €)</label>`;
+  $("pfDel").style.display=nueva?"none":"";v.classList.add("on");setTimeout(()=>$("pfC").focus(),80);
+  const calc=()=>{const co=num($("pfCo").value),m=num($("pfM").value);if(co>0&&m>=0){$("pfP").value=r2(co/1.21*(1+m/100));$("pfF").checked=false}};
+  if(material){$("pfCo").oninput=calc;$("pfM").oninput=calc}
+  $("pfOk").onclick=()=>{const c=$("pfC").value.trim();if(!c){aviso("Pon el concepto",1500);return}
+    x.c=c;x.d=$("pfD").value.trim();x.q=num($("pfQ").value)||1;const pv=num($("pfP").value)||0;
+    if($("pfF").checked){x.iva=pv;delete x.p}else{x.p=pv;delete x.iva}
+    if(material){x.coste=$("pfCo").value;x.margen=num($("pfM").value)}
+    if(nueva)prCur.partidas.push(x);guardarPres();v.classList.remove("on");pintarPartidas()};
+  $("pfDel").onclick=()=>{prCur.partidas=prCur.partidas.filter(z=>z!==x);guardarPres();v.classList.remove("on");pintarPartidas()};
+}
+// Hoja: tarifa
+function abrirTarifa(){const v=$("vTar");$("tarBus").value="";pintarTarifa("");v.classList.add("on")}
+function pintarTarifa(q){q=q.toLowerCase();let h="",g0="";
+  for(const t0 of TARIFA){const t=tar(t0.id);if(q&&!(t.c+" "+t.g).toLowerCase().includes(q))continue;
+    if(t.g!==g0){h+=`<h3>${t.g}</h3>`;g0=t.g}
+    h+=`<div class="fila tarjeta" data-tid="${t.id}"><div class="q"><b>${esc(t.c)}</b>${t.d?`<small>${esc(t.d)}</small>`:""}</div><b class="imp">${t.iva!==undefined?eur(t.iva)+"<small> IVA incl.</small>":eur(t.p)}</b></div>`}
+  $("tarLista").innerHTML=h||`<p class="vacio">Nada con ese nombre.</p>`}
+$("tarBus").oninput=e=>pintarTarifa(e.target.value);
+$("tarLista").onclick=e=>{const r=e.target.closest("[data-tid]");if(!r)return;agregar(prCur,tar(r.dataset.tid),1);guardarPres();pintarPartidas();
+  r.classList.add("ok");setTimeout(()=>r.classList.remove("ok"),500);aviso("Añadido: "+tar(r.dataset.tid).c,1300)};
+// Hoja: importar desde plano
+let impNuevo=false;
+function abrirImport(nuevo){impNuevo=nuevo;let h="";
+  for(const p of db.proy){const n=p.plantas.reduce((s,pl)=>s+pl.items.filter(i=>!NO_CUENTA[i.t]).length,0);
+    h+=`<label class="fila tarjeta"><input type="radio" name="impP" value="${p.id}" ${p.id===db.cur?"checked":""}><div class="q"><b>${esc(p.nombre)}</b><small>${esc(p.cliente||"Sin cliente")} · ${n} puntos</small></div></label>`}
+  $("impLista").innerHTML=h;$("vImp").classList.add("on")}
+$("impOk").onclick=async()=>{const r=document.querySelector("[name=impP]:checked");if(!r)return;const proy=db.proy.find(p=>p.id===r.value);
+  if(impNuevo){prCur=nuevoPres()}
+  const antes=prCur.partidas.length;
+  const sin=desdePlano(prCur,proy,{tubo:$("impTubo").checked,empotrado:$("impEmp").checked,material:$("impMat").checked});
+  guardarPres();$("vImp").classList.remove("on");editorPres();
+  const n=prCur.partidas.length-antes;
+  await avisar(`Añadidas o actualizadas ${Math.max(n,0)} partidas desde «${proy.nombre}».`+(sin.length?` Sin tarifa, añádelos a mano: ${sin.join(", ")}.`:"")+" Revisa cantidades y metros antes de enviarlo.")};
+// Hoja: ajustes de empresa, firma y tarifas
+function abrirAjustes(){if(Nube.esTecnico()||Nube.verComo())return;const E=EMP;
+  $("ajForm").innerHTML=`<div class="caja">${[["marca","Marca"],["lema","Lema (cabecera)"],["titular","Titular"],["nie","NIF / NIE (sale en el PDF)"],["localidad","Localidad"],["telefono","Teléfono"],["email","Email"],["web","Web"],["zona","Zona (desplazamiento incluido)"]].map(([k,l])=>`<label>${l}<input data-e="${k}" value="${esc(E[k]||"")}"></label>`).join("")}
+   <div class="g2"><label>Validez (días)<input data-e="validez" type="number" value="${E.validez}"></label><label>Siguiente nº<input id="ajSig" type="number" value="${PR.sig}"></label></div>
+   <small class="ayuda">El número se pone solo: el siguiente al más alto guardado del año, o este si es mayor.</small></div>
+   <h3>Firma</h3><div class="caja"><canvas id="firmaCv" width="600" height="220"></canvas>
+   <div class="g2 bots"><button class="pb" id="fBorrar">Borrar</button><button class="pb" id="fSubir">Subir imagen</button></div><input type="file" id="fFile" accept="image/*" hidden>
+   <small class="ayuda">Firma con el dedo en el recuadro. Se guarda solo en este móvil.</small></div>
+   <h3>Mis tarifas</h3><div class="caja">${TARIFA.map(t=>`<div class="trow"><span>${esc(t.c)}</span><input data-tov="${t.id}" type="number" inputmode="decimal" step="any" value="${TOV[t.id]??(t.iva!==undefined?t.iva:t.p)}"></div>`).join("")}
+   <small class="ayuda">Precios sin IVA, salvo Starlink (con IVA). Material eléctrico: precio de venta sin IVA (Obramat ÷ 1,21 × 1,10).</small></div>`;
+  $("vAj").classList.add("on");firmaPad()}
+function firmaPad(){const cv=$("firmaCv"),cx=cv.getContext("2d");let dib=false,ult=null,cambiada=false;
+  const limpiar=()=>{cx.fillStyle="#fff";cx.fillRect(0,0,cv.width,cv.height);cx.strokeStyle="#E3E8EF";cx.lineWidth=2;cx.beginPath();cx.moveTo(30,170);cx.lineTo(570,170);cx.stroke()};
+  limpiar();if(EMP.firma){const i=new Image();i.onload=()=>{const k=Math.min(cv.width/i.width,cv.height/i.height);cx.drawImage(i,(cv.width-i.width*k)/2,(cv.height-i.height*k)/2,i.width*k,i.height*k)};i.src=EMP.firma}
+  const pos=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height}};
+  cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);dib=true;ult=pos(e);if(!cambiada&&EMP.firma){limpiar()}cambiada=true};
+  cv.onpointermove=e=>{if(!dib)return;const p=pos(e);cx.strokeStyle="#0B1F3A";cx.lineWidth=4;cx.lineCap="round";cx.beginPath();cx.moveTo(ult.x,ult.y);cx.lineTo(p.x,p.y);cx.stroke();ult=p};
+  cv.onpointerup=cv.onpointercancel=()=>{if(dib){dib=false;EMP.firma=recortar(cv);guardarEmp()}};
+  $("fBorrar").onclick=()=>{limpiar();EMP.firma="";cambiada=true;guardarEmp()};
+  $("fSubir").onclick=()=>$("fFile").click();
+  $("fFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const i=new Image();i.onload=()=>{
+    const k=Math.min(1,800/i.width);const c2=document.createElement("canvas");c2.width=i.width*k;c2.height=i.height*k;const x2=c2.getContext("2d");x2.fillStyle="#fff";x2.fillRect(0,0,c2.width,c2.height);x2.drawImage(i,0,0,c2.width,c2.height);
+    EMP.firma=c2.toDataURL("image/png");guardarEmp();cambiada=false;firmaPad()};i.src=rd.result};rd.readAsDataURL(f)}}
+function recortar(cv){const cx=cv.getContext("2d"),d=cx.getImageData(0,0,cv.width,cv.height).data;let a=cv.width,b=cv.height,c=0,e=0;
+  for(let y=0;y<cv.height;y++)for(let x=0;x<cv.width;x++){const i=(y*cv.width+x)*4;if(d[i]<120&&d[i+2]<160){a=Math.min(a,x);b=Math.min(b,y);c=Math.max(c,x);e=Math.max(e,y)}}
+  if(c<=a)return"";const m=8,w=c-a+2*m,h=e-b+2*m,o=document.createElement("canvas");o.width=w;o.height=h;const ox=o.getContext("2d");ox.fillStyle="#fff";ox.fillRect(0,0,w,h);
+  ox.drawImage(cv,a-m,b-m,w,h,0,0,w,h);return o.toDataURL("image/png")}
+$("ajForm").addEventListener("input",e=>{const t=e.target;
+  if(t.dataset.e){EMP[t.dataset.e]=t.dataset.e==="validez"?(parseInt(t.value)||15):t.value;guardarEmp()}
+  if(t.id==="ajSig"){PR.sig=parseInt(t.value)||PR.sig;guardarPres()}
+  if(t.dataset.tov){const v=num(t.value);if(v>=0)TOV[t.dataset.tov]=v;guardarEmp()}});
+document.querySelectorAll("#vPart,#vTar,#vImp,#vAj").forEach(v=>v.addEventListener("click",e=>{if(e.target===v||e.target.closest("[data-cerrar]")){v.classList.remove("on");if(v.id==="vAj"&&!prCur)listaPres()}}));
+cargarPres();
+function ponerCliente(pr,c){pr.clienteId=c.id;pr.tipo=c.tipo==="empresa"?"empresa":"particular";
+  pr.cliente={nombre:c.nombre||"",nif:c.nif||"",direccion:[c.dir,c.localidad].filter(Boolean).join(", "),contacto:c.contacto||"",telefono:c.tel||"",email:c.email||""};guardarPres()}
+function elegirCliente(){const L=Nube.clientes();const pinta=q=>{q=(q||"").toLowerCase();const f=L.filter(c=>!q||[c.nombre,c.localidad,c.tel].join(" ").toLowerCase().includes(q));
+    $("cliLista").innerHTML=f.length?f.map(c=>`<div class="fila tarjeta" data-cid="${c.id}"><div class="q"><b>${esc(c.nombre)}</b><small>${esc([c.localidad,c.tel].filter(Boolean).join(" · ")||"—")}</small></div></div>`).join(""):`<p class="vacio">${L.length?"Ningún cliente coincide.":"Todavía no hay clientes. Créalos en la app de Clientes."}</p>`};
+  $("cliBus").value="";pinta("");$("cliBus").oninput=e=>pinta(e.target.value);$("vCli").classList.add("on");
+  $("cliLista").onclick=e=>{const r=e.target.closest("[data-cid]");if(!r)return;ponerCliente(prCur,L.find(c=>c.id===r.dataset.cid));$("vCli").classList.remove("on");editorPres()}}
+
+// ---------- Inicio ----------
+window.addEventListener("resize",()=>dibujar());
+cargar();botonesHist();ajustar();panel();
+if(!PL().paredes.length&&!PL().items.length)setHerr("hab");
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("/sw.js").catch(()=>{});
+// Enlaces desde el inicio y desde las fichas de clientes
+(async()=>{const QP=new URLSearchParams(location.search);if(!location.search)return;history.replaceState(null,"",location.pathname);
+  const cid=QP.get("cliente"),cli=cid?Nube.clientes().find(c=>c.id===cid):null,n=QP.get("nuevo");
+  if(QP.get("abrir")&&db.proy.some(p=>p.id===QP.get("abrir"))){db.cur=QP.get("abrir");guardar();ajustar()}
+  if(QP.get("pres")){const p=PR.lista.find(x=>x.id===QP.get("pres"));if(p){prCur=p;setModo("pres")}}
+  if(QP.get("modo")==="pres")setModo("pres");
+  if(n==="pres"){prCur=nuevoPres();if(cli)ponerCliente(prCur,cli);setModo("pres")}
+  if(n==="plano"){const nom=cli?cli.nombre:await pedir("Nombre del plano (p. ej. Casa Irina, Nave polígono)","");if(!nom)return;
+    const p=nuevoProyecto(nom.trim(),cli?[cli.dir,cli.localidad].filter(Boolean).join(", "):"");if(cli)p.clienteId=cli.id;
+    db.proy.unshift(p);db.cur=p.id;hist=[];rehacer=[];botonesHist();sel=null;guardar();setHerr("hab");ajustar()}})();
+// Sincronización con la nube
+function recargarTodo(){cargar();cargarPres();hist=[];rehacer=[];botonesHist();fondoKey="";
+  if(modo==="pres"){prCur=prCur&&PR.lista.find(p=>p.id===prCur.id)||null;prCur?editorPres():listaPres()}else{sel=null;dibujar();ajustar();panel()}}
+Nube.sincronizar(["planos","presupuestos","empresa"]).then(ch=>{if(ch.length){recargarTodo();aviso("Datos actualizados desde la nube",2000)}refrescarEnlaces()});
+Nube.reintentarFotos(id=>IDB.get(id));
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")Nube.sincronizar(["planos","presupuestos","empresa"]).then(ch=>{if(ch.length)recargarTodo()})});
+</script>
+</body>
+</html>

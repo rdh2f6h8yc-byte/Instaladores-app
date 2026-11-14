@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#0B1F3A">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png">
+<link rel="stylesheet" href="/base.css">
+<title>Material</title>
+<style>
+.buscar{margin:0 0 8px}
+.it{display:flex;align-items:center;gap:10px}.it .q{flex:1;min-width:0;cursor:pointer}.it .q b{display:block;font-size:14.5px}.it .q small{color:var(--gris);font-size:12px}
+.st{display:flex;align-items:center;gap:4px}.st button{width:34px;height:34px;border-radius:9px;background:var(--claro);font-size:18px;font-weight:700}
+.st span{min-width:56px;text-align:center;font-weight:800;font-size:15px}.st span small{display:block;font-weight:600;font-size:10.5px;color:var(--gris)}
+.bajo .st span{color:var(--rojo)}
+.banner{background:#FFF8EC;border:1px solid #F5D9AE;border-radius:12px;padding:12px;margin-bottom:10px;font-size:14px}
+.banner.ok{background:#E3F4EA;border-color:#BFE3CC}
+.inv{display:grid;grid-template-columns:1fr 84px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--claro)}
+.inv:first-child{border-top:0}.inv b{font-size:14px;display:block}.inv small{color:var(--gris);font-size:12px}.inv input{margin:0;text-align:center;font-weight:700}
+.dif{font-weight:700;font-size:12px}.mas0{color:var(--verde)}.menos0{color:var(--rojo)}
+.mov{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid var(--claro)}
+</style>
+</head>
+<body>
+<header><a class="ib" href="/" id="bInicio">⌂</a><div class="tit"><small>FURGONETA <span id="nubeEst" style="color:#8FA3BC">☁︎</span></small><b id="titulo">Material</b></div><button class="ib" id="bNuevo" title="Añadir material">＋</button></header>
+<main id="main"></main>
+<div class="velo" id="vItem"><div class="hoja"><h2 id="iTit">Material <button class="x" data-cerrar>×</button></h2><div id="iCuerpo"></div></div></div>
+<div class="velo" id="vDlg" style="align-items:center;padding:16px;z-index:20"><div class="hoja" style="border-radius:16px;max-width:420px">
+  <div id="dMsg" style="font-weight:700;font-size:16px;margin-bottom:12px;white-space:pre-wrap"></div><input id="dIn" inputmode="decimal" autocomplete="off">
+  <div class="fila2" style="margin-top:12px"><button class="btn" id="dNo" style="margin:0">Cancelar</button><button class="btn az" id="dOk" style="margin:0">Aceptar</button></div></div></div>
+<div id="aviso"></div>
+<script src="/config.js"></script><script src="/nube.js"></script>
+<script>
+"use strict";
+if(!Nube.requerir())throw new Error("Hay que iniciar sesión");
+const LS="almara-material-v1";
+const CATS=["Cable","Conectores","Starlink","Redes y WiFi","Electricidad","Cámaras","Fijación","Herramienta","Otro"];
+const BASICO=[["Cable","Cable Cat6 exterior (m)","m",50],["Cable","Cable Cat6 interior (m)","m",50],["Cable","Cable coaxial (m)","m",30],["Cable","Cable 1,5 mm2 (m)","m",50],["Cable","Cable 2,5 mm2 (m)","m",50],["Cable","Cable 4 mm2 (m)","m",20],["Cable","Cable 6 mm2 (m)","m",20],
+ ["Conectores","Conector RJ45 Cat6","ud",30],["Conectores","Conector RJ45 exterior apantallado","ud",10],["Conectores","Conector F coaxial","ud",10],["Conectores","Bornas Wago","ud",30],
+ ["Starlink","Soporte de pared Starlink","ud",2],["Starlink","Mástil para antena","ud",1],["Starlink","Pasamuros","ud",3],["Starlink","Adaptador Ethernet Starlink","ud",1],
+ ["Redes y WiFi","Switch 8 puertos","ud",1],["Redes y WiFi","Latiguillo RJ45 1 m","ud",5],["Redes y WiFi","Punto de acceso WiFi exterior","ud",1],
+ ["Electricidad","Enchufe Schneider Asfora blanco","ud",10],["Electricidad","Interruptor / conmutador Asfora blanco","ud",10],["Electricidad","Caja de mecanismo universal","ud",10],["Electricidad","Tubo corrugado 20 mm (m)","m",25],["Electricidad","Magnetotérmico 16 A","ud",2],
+ ["Cámaras","Caja de conexiones para cámara","ud",2],["Fijación","Bridas","ud",100],["Fijación","Tacos y tornillos","ud",50],["Fijación","Grapas para cable","ud",50],["Fijación","Cinta aislante","ud",3],["Fijación","Silicona","ud",1]];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const hoy=()=>new Date().toISOString().slice(0,10);
+const mesAct=()=>hoy().slice(0,7);
+const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const nomMes=m=>MESES[+m.slice(5,7)-1]+" "+m.slice(0,4);
+const num=v=>{const n=parseFloat(String(v).replace(",","."));return isFinite(n)?n:0};
+const r2=v=>Math.round(v*100)/100;
+const fmt=v=>String(r2(v)).replace(".",",");
+const eur=v=>r2(v).toFixed(2).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g,".")+" €";
+const aviso=(t,ms)=>{const a=$("aviso");a.textContent=t;a.style.display=t?"block":"none";clearTimeout(aviso.t);if(t)aviso.t=setTimeout(()=>a.style.display="none",ms||1800)};
+function dialogo(msg,valor,inp){return new Promise(ok=>{const v=$("vDlg"),i=$("dIn");$("dMsg").textContent=msg;i.style.display=inp?"block":"none";i.value=valor||"";v.classList.add("on");if(inp)setTimeout(()=>{i.focus();i.select()},60);
+  const fin=r=>{v.classList.remove("on");ok(r)};$("dOk").onclick=()=>fin(inp?i.value:true);$("dNo").onclick=()=>fin(inp?null:false);i.onkeydown=e=>{if(e.key==="Enter")fin(i.value)}})}
+let M={items:[],movs:[],inventarios:[]},vista="lista",cat="todas",busq="",borrador=null;
+function cargar(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.items)M={movs:[],inventarios:[],...s}}catch(e){}}
+function guardar(){try{M.movs=M.movs.slice(0,1000);localStorage.setItem(LS,JSON.stringify(M));Nube.marcar("material")}catch(e){aviso("No se ha podido guardar",2500)}}
+const bajo=i=>i.min>0&&i.stock<=i.min;
+function mover(it,q,tipo,ref){if(!q)return;it.stock=r2(it.stock+q);M.movs.unshift({id:uid(),fecha:new Date().toISOString(),itemId:it.id,q:r2(q),tipo,ref:ref||""})}
+function pintar(){$("bInicio").textContent=vista==="lista"?"⌂":"‹";$("bNuevo").style.visibility=vista==="lista"?"visible":"hidden";vista==="inv"?pintarInv():pintarLista()}
+function pintarLista(){$("titulo").textContent="Material furgoneta";
+  const hecho=M.inventarios.some(v=>v.mes===mesAct()),nb=M.items.filter(bajo).length;
+  let h="";
+  if(M.items.length)h+=hecho?`<div class="banner ok">✓ Inventario de ${nomMes(mesAct())} hecho.</div>`:`<div class="banner">📋 <b>Toca hacer el inventario de ${nomMes(mesAct())}.</b><button class="btn az" data-a="inv" style="margin-top:8px">Hacer inventario ahora</button></div>`;
+  if(!M.items.length)return $("main").innerHTML=`<div class="vacio">Todavía no hay material.<br>Empieza con una lista básica (cables, conectores, soportes, mecanismos…) y ajusta las cantidades.</div>
+    <button class="btn az" data-a="basico">Cargar lista básica</button><button class="btn" data-a="nuevo">＋ Añadir material a mano</button>`;
+  const q=busq.toLowerCase();const L=M.items.filter(i=>(cat==="todas"||(cat==="bajo"?bajo(i):i.cat===cat))&&(!q||i.nombre.toLowerCase().includes(q))).sort((a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||a.nombre.localeCompare(b.nombre));
+  const valor=M.items.reduce((s,i)=>s+(i.coste?i.coste*Math.max(0,i.stock):0),0);
+  h+=`<input class="buscar" id="busq" placeholder="Buscar material" value="${esc(busq)}" type="search">
+  <div class="chips">${[["todas","Todo"],["bajo",`⚠️ Bajo mínimo (${nb})`],...CATS.filter(c=>M.items.some(i=>i.cat===c)).map(c=>[c,c])].map(([k,l])=>`<button data-cat="${esc(k)}" class="${cat===k?"on":""}">${l}</button>`).join("")}</div>`;
+  let c0="";for(const i of L){if(i.cat!==c0){h+=`<h3>${esc(i.cat)}</h3>`;c0=i.cat}
+    h+=`<div class="card it ${bajo(i)?"bajo":""}" data-id="${i.id}"><div class="q" data-ed="${i.id}"><b>${esc(i.nombre)}</b><small>${bajo(i)?"⚠️ Reponer · ":""}mínimo ${fmt(i.min)} ${esc(i.ud)}${i.coste?" · "+eur(i.coste)+"/"+esc(i.ud):""}</small></div>
+      <div class="st"><button data-m="-1">−</button><span>${fmt(i.stock)}<small>${esc(i.ud)}</small></span><button data-m="1">+</button></div></div>`}
+  if(!L.length)h+=`<div class="vacio">Nada con ese filtro.</div>`;
+  h+=`<h3>Inventarios</h3>${M.inventarios.length?M.inventarios.slice(0,12).map(v=>`<div class="card"><b>${nomMes(v.mes)}</b> · <small style="color:var(--gris)">${new Date(v.fecha).toLocaleDateString("es-ES")} · ${v.lineas.filter(l=>l.contado!==l.teorico).length} diferencias${v.valor?" · valor "+eur(v.valor):""}</small></div>`).join(""):`<div class="vacio" style="padding:10px">Aún no has hecho ningún inventario.</div>`}
+  ${valor?`<p style="text-align:right;color:var(--gris);font-size:13px">Valor del material en la furgoneta: <b style="color:var(--azul)">${eur(valor)}</b></p>`:""}
+  <button class="btn" data-a="inv">📋 Hacer inventario</button>`;
+  $("main").innerHTML=h;$("busq").oninput=e=>{busq=e.target.value;const p=e.target.selectionStart;pintarLista();const b=$("busq");b.focus();b.setSelectionRange(p,p)}}
+function pintarInv(){$("titulo").textContent="Inventario de "+nomMes(mesAct());
+  if(!borrador)borrador=Object.fromEntries(M.items.map(i=>[i.id,String(fmt(i.stock))]));
+  let h=`<div class="banner" style="background:#E3F0FC;border-color:#BFD9F2">Cuenta lo que hay en la furgoneta y escribe la cantidad real. Lo que no toques se queda igual.</div>`,c0="";
+  for(const i of M.items.slice().sort((a,b)=>CATS.indexOf(a.cat)-CATS.indexOf(b.cat)||a.nombre.localeCompare(b.nombre))){if(i.cat!==c0){h+=`${c0?"</div>":""}<h3>${esc(i.cat)}</h3><div class="card">`;c0=i.cat}
+    const d=r2(num(borrador[i.id])-i.stock);h+=`<div class="inv"><div><b>${esc(i.nombre)}</b><small>En la app: ${fmt(i.stock)} ${esc(i.ud)} <span class="dif ${d>0?"mas0":d<0?"menos0":""}" id="d-${i.id}">${d?(d>0?"+":"")+fmt(d):""}</span></small></div><input data-inv="${i.id}" inputmode="decimal" value="${esc(borrador[i.id])}"></div>`}
+  h+=`</div><button class="btn az" data-a="guardarInv">Guardar inventario</button><button class="btn" data-a="cancelarInv">Cancelar</button>`;$("main").innerHTML=h}
+$("main").addEventListener("input",e=>{const t=e.target;if(t.dataset.inv){borrador[t.dataset.inv]=t.value;const it=M.items.find(i=>i.id===t.dataset.inv),d=r2(num(t.value)-it.stock),el=$("d-"+it.id);el.textContent=d?(d>0?"+":"")+fmt(d):"";el.className="dif "+(d>0?"mas0":d<0?"menos0":"")}});
+$("main").addEventListener("click",async e=>{
+  const c=e.target.closest("[data-cat]");if(c){cat=c.dataset.cat;pintarLista();return}
+  const m=e.target.closest("[data-m]");if(m){const it=M.items.find(i=>i.id===m.closest("[data-id]").dataset.id);mover(it,+m.dataset.m,"ajuste");guardar();pintarLista();return}
+  const ed=e.target.closest("[data-ed]");if(ed){formItem(M.items.find(i=>i.id===ed.dataset.ed));return}
+  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+  if(a==="basico"){for(const [c_,n,u,mn] of BASICO)M.items.push({id:uid(),cat:c_,nombre:n,ud:u,stock:0,min:mn,coste:0});guardar();aviso("Lista cargada. Ahora haz el primer inventario.",3000);borrador=null;vista="inv";pintar();return}
+  if(a==="nuevo"){formItem(null);return}
+  if(a==="inv"){borrador=null;vista="inv";pintar();window.scrollTo(0,0);return}
+  if(a==="cancelarInv"){vista="lista";borrador=null;pintar();return}
+  if(a==="guardarInv"){const lineas=M.items.map(i=>({id:i.id,nombre:i.nombre,teorico:i.stock,contado:r2(num(borrador[i.id]))}));
+    for(const l of lineas){const it=M.items.find(i=>i.id===l.id);if(l.contado!==l.teorico)mover(it,l.contado-l.teorico,"inventario",nomMes(mesAct()))}
+    const valor=M.items.reduce((s,i)=>s+(i.coste?i.coste*Math.max(0,i.stock):0),0);
+    M.inventarios=M.inventarios.filter(v=>v.mes!==mesAct());M.inventarios.unshift({id:uid(),mes:mesAct(),fecha:new Date().toISOString(),lineas,valor:r2(valor)});
+    guardar();borrador=null;vista="lista";pintar();aviso("Inventario guardado ✓",2500);window.scrollTo(0,0)}});
+$("bInicio").onclick=e=>{if(vista!=="lista"){e.preventDefault();vista="lista";borrador=null;pintar()}};
+$("bNuevo").onclick=()=>formItem(null);
+document.querySelectorAll(".velo:not(#vDlg)").forEach(v=>v.addEventListener("click",e=>{if(e.target===v||e.target.closest("[data-cerrar]"))v.classList.remove("on")}));
+function formItem(it){const n=!it;it=it||{cat:"Cable",ud:"ud",stock:0,min:0,coste:0};
+  const movs=n?[]:M.movs.filter(m=>m.itemId===it.id).slice(0,15);
+  $("iTit").firstChild.textContent=(n?"Nuevo material":"Editar material")+" ";
+  $("iCuerpo").innerHTML=`<label>Nombre<input id="fN" value="${esc(it.nombre)}" placeholder="Cable Cat6 exterior (m)"></label>
+  <div class="g2"><label>Categoría<select id="fC">${CATS.map(c=>`<option ${it.cat===c?"selected":""}>${c}</option>`).join("")}</select></label><label>Unidad<select id="fU">${["ud","m","rollo","caja","kg","l"].map(u=>`<option ${it.ud===u?"selected":""}>${u}</option>`).join("")}</select></label></div>
+  <div class="g2"><label>${n?"Cantidad inicial":"Cantidad actual"}<input id="fS" inputmode="decimal" value="${fmt(it.stock)}"></label><label>Avisar si baja de<input id="fM" inputmode="decimal" value="${fmt(it.min)}"></label></div>
+  <label>Coste por unidad (opcional, €)<input id="fCo" inputmode="decimal" value="${it.coste?fmt(it.coste):""}"></label>
+  <button class="btn az" id="fOk">Guardar</button>${n?"":`<div class="fila2"><button class="btn" id="fEnt">📦 Entrada (compra)</button><button class="btn rojo" id="fDel">Eliminar</button></div>
+  ${movs.length?`<h3>Últimos movimientos</h3>${movs.map(m=>`<div class="mov"><span>${new Date(m.fecha).toLocaleDateString("es-ES")} · ${esc({entrada:"Compra",ajuste:"Ajuste",inventario:"Inventario",parte:"Parte de trabajo"}[m.tipo]||m.tipo)}${m.ref?" · "+esc(m.ref):""}</span><b class="${m.q>0?"mas0":"menos0"}">${m.q>0?"+":""}${fmt(m.q)}</b></div>`).join("")}`:""}`}
+  <p style="color:var(--gris);font-size:12px;margin-top:12px">Si en un parte de trabajo apuntas este material con el mismo nombre, se descuenta solo.</p>`;
+  $("vItem").classList.add("on");if(n)setTimeout(()=>$("fN").focus(),80);
+  $("fOk").onclick=()=>{const nom=$("fN").value.trim();if(!nom){aviso("Pon el nombre");return}
+    const s=num($("fS").value);Object.assign(it,{nombre:nom,cat:$("fC").value,ud:$("fU").value,min:num($("fM").value),coste:num($("fCo").value)});
+    if(n){it.id=uid();it.stock=0;M.items.push(it);mover(it,s,"ajuste","Alta")}else if(s!==it.stock)mover(it,s-it.stock,"ajuste");
+    guardar();$("vItem").classList.remove("on");pintar()};
+  if(!n){$("fEnt").onclick=async()=>{const q=await dialogo(`¿Cuánto has comprado de «${it.nombre}»? (${it.ud})`,"",true);if(q===null)return;const v=num(q);if(!v)return;mover(it,v,"entrada");guardar();$("vItem").classList.remove("on");pintar();aviso("Entrada de "+fmt(v)+" "+it.ud+" ✓")};
+    $("fDel").onclick=async()=>{if(!await dialogo(`¿Eliminar «${it.nombre}» del material?`,"",false))return;M.items=M.items.filter(i=>i!==it);guardar();$("vItem").classList.remove("on");pintar()}}}
+cargar();pintar();
+Nube.sincronizar(["material"]).then(ch=>{if(ch.length&&vista==="lista"){cargar();pintar()}});
+if(new URLSearchParams(location.search).get("inv")&&M.items.length){history.replaceState(null,"",location.pathname);vista="inv";pintar()}
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("/sw.js").catch(()=>{});
+</script>
+</body>
+</html>

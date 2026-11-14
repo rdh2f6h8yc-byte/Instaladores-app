@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B1F3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Instaladores">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon-192.png">
+<title>App para instaladores</title>
+<style>
+:root{--azul:#0B1F3A;--acento:#1E88E5;--gris:#5F6B7A;--claro:#EEF2F7;--borde:#D6DEE8;--rojo:#C62828;--nar:#E8730C;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--azul);background:#F3F6FA}
+[hidden]{display:none!important}
+button{font:inherit;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+/* Portada de acceso */
+#acceso{min-height:100vh;background:radial-gradient(120% 70% at 50% 0%,#17365F 0%,#0B1F3A 60%);color:#fff;display:flex;flex-direction:column;justify-content:center;padding:calc(var(--st) + 30px) 24px calc(var(--sb) + 30px)}
+.marca{text-align:center;margin-bottom:34px}
+.marca .logo{width:78px;height:78px;border-radius:20px;margin:0 auto 16px;display:block;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.marca h1{margin:0;font-size:38px;letter-spacing:.06em;font-weight:800}
+.marca p{margin:6px 0 0;color:#9FB4CF;font-size:13px;letter-spacing:.1em;text-transform:uppercase}
+form{max-width:380px;width:100%;margin:0 auto}
+form label{display:block;font-size:12px;color:#9FB4CF;font-weight:600;margin:12px 0 5px;letter-spacing:.04em}
+form input{display:block;width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:16px}
+form input:focus{outline:none;border-color:#1E88E5;background:rgba(255,255,255,.12)}
+.ver{position:relative}.ver button{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;color:#9FB4CF;font-size:13px;font-weight:700;padding:8px}
+.entrar{width:100%;margin-top:22px;padding:15px;border-radius:12px;background:#1E88E5;color:#fff;font-weight:800;font-size:16px}
+.entrar[disabled]{opacity:.6}
+.error{color:#FFB4B4;font-size:13.5px;margin-top:12px;min-height:18px;text-align:center}
+.pie{text-align:center;color:#6F86A6;font-size:12px;margin-top:30px}
+/* Inicio */
+#inicio{display:none;padding-bottom:calc(var(--sb) + 30px)}
+header{background:var(--azul);color:#fff;padding:calc(var(--st) + 14px) 18px 22px}
+header .fila{display:flex;align-items:center;gap:10px}
+header small{display:block;color:#9FB4CF;font-size:12px;letter-spacing:.08em}
+header h2{margin:2px 0 0;font-size:24px}
+header .nube{margin-left:auto;font-size:13px;color:#9FB4CF;text-align:right}
+main{max-width:680px;margin:-12px auto 0;padding:0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:#fff;border:1px solid var(--borde);border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:8px;min-height:116px;box-shadow:0 2px 8px rgba(11,31,58,.05)}
+.tile .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:20px}
+.tile b{font-size:16px}.tile small{color:var(--gris);font-size:12.5px;line-height:1.3}
+.tile.nuevo{background:var(--azul);color:#fff;border-color:var(--azul)}.tile.nuevo small{color:#B8C7DA}
+h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);margin:22px 4px 8px}
+.alerta{background:#FFF8EC;border:1px solid #F5D9AE;border-radius:14px;padding:6px 14px}
+.alerta a{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid #F5E3C6;font-size:14px}
+.alerta a:first-child{border-top:0}
+.salir{display:block;margin:26px auto 0;background:none;color:var(--gris);font-weight:700;font-size:14px;padding:10px}
+.avisosBtn{display:flex;align-items:center;gap:12px;width:100%;margin-top:18px;background:#fff;border:1px solid var(--borde);border-radius:16px;padding:14px;text-align:left;color:var(--azul)}
+.avisosBtn .ic{font-size:22px}.avisosBtn b{display:block;font-size:15px}.avisosBtn small{color:var(--gris);font-size:12.5px}
+.velo{position:fixed;inset:0;background:rgba(11,31,58,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}.velo.on{display:flex}
+.hoja{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(var(--sb) + 20px)}
+.hoja h2{margin:0 0 6px;font-size:19px;display:flex;align-items:center}.hoja h2 button{margin-left:auto;background:none;font-size:22px;width:36px;height:36px}
+.paso{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--claro);font-size:14.5px;line-height:1.45}.paso:first-of-type{border-top:0}
+.paso .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px}
+.canal{font-family:ui-monospace,Menlo,monospace;font-size:16px;background:var(--claro);border-radius:10px;padding:10px 12px;margin:8px 0;word-break:break-all;font-weight:700}
+.bt{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--claro);color:var(--azul);font-weight:700;font-size:14px;margin:4px 6px 0 0}
+.bt.az{background:var(--azul);color:#fff}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--claro);font-size:14.5px}
+.sw input{width:22px;height:22px;accent-color:#1E88E5}
+.estadoAv{border-radius:12px;padding:10px 12px;font-size:14px;margin:6px 0 4px}
+.aviso-conf{max-width:420px;margin:0 auto 18px;background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.4);color:#FFE7A3;border-radius:12px;padding:12px;font-size:13px;line-height:1.45}
+</style>
+</head>
+<body>
+<section id="acceso">
+  <div class="marca"><img class="logo" src="/icon-192.png" alt=""><h1 data-producto>App para instaladores</h1><p>Clientes · Planos · Presupuestos</p></div>
+  <div class="aviso-conf" id="avisoConf" hidden>Falta conectar Supabase: pega la Project URL y la anon key en el archivo <b>config.js</b>. Mientras tanto puedes entrar y usar las apps solo en este móvil.</div>
+  <form id="fAcceso" autocomplete="on">
+    <label for="email">Correo</label>
+    <input id="email" type="email" inputmode="email" autocomplete="username" required>
+    <label for="pass">Contraseña</label>
+    <div class="ver"><input id="pass" type="password" autocomplete="current-password" required><button type="button" id="verPass">Ver</button></div>
+    <button class="entrar" id="bEntrar" type="submit">Entrar</button>
+    <div class="error" id="error"></div>
+    <button type="button" id="bModo" style="display:block;width:100%;margin-top:14px;background:none;color:#CFE0F5;font-size:14.5px;font-weight:700;padding:10px">¿Tu empresa aún no tiene cuenta? Crear cuenta gratis</button>
+  </form>
+  <form id="fAlta" autocomplete="off" hidden>
+    <p id="altaTxt" style="color:#CFE0F5;font-size:14.5px;line-height:1.45;margin:0 0 14px">Último paso: da de alta tu empresa. Tendrás 30 días de prueba con todo incluido.</p>
+    <label for="aEmp">Nombre de tu empresa</label>
+    <input id="aEmp" maxlength="120" autocomplete="organization" required>
+    <label for="aNom">Tu nombre</label>
+    <input id="aNom" maxlength="80" autocomplete="given-name" required>
+    <button class="entrar" id="bAlta" type="submit">Crear mi empresa</button>
+    <div class="error" id="errorAlta"></div>
+    <p style="color:#9FB4CF;font-size:13px;line-height:1.45;margin:14px 0 0">¿Trabajas para una empresa que ya usa la app? Pídele a tu jefe que te añada con este mismo correo desde <b>Equipo</b> y vuelve a entrar.</p>
+    <button type="button" id="bSalirAlta" style="display:block;width:100%;margin-top:8px;background:none;color:#CFE0F5;font-size:14px;font-weight:700;padding:10px">Cerrar sesión</button>
+  </form>
+  <div class="pie">Para empresas instaladoras</div>
+</section>
+
+<section id="inicio">
+  <header><div class="fila"><div><small id="empNom"></small><h2 id="saludo">Hola</h2></div><div class="nube" id="nubeTxt"></div></div></header>
+  <main>
+    <div class="grid" style="margin-top:0">
+      <a class="tile" href="/clientes/"><span class="ic" style="background:#E3F0FC">👥</span><b>Clientes</b><small id="nCli">Fichas, accesos y mantenimientos</small></a>
+      <a class="tile nuevo" href="/clientes/?nuevo=1"><span class="ic" style="background:rgba(255,255,255,.14)">＋</span><b>Nuevo cliente</b><small>Crear ficha</small></a>
+      <a class="tile" href="/planos/"><span class="ic" style="background:#FFF1E3">📐</span><b>Planos</b><small id="nPla">Planos eléctricos</small></a>
+      <a class="tile nuevo" href="/planos/?nuevo=plano"><span class="ic" style="background:rgba(255,255,255,.14)">＋</span><b>Nuevo plano</b><small>Desde cero o con foto</small></a>
+      <a class="tile" href="/planos/?modo=pres"><span class="ic" style="background:#E3F4EA">€</span><b>Presupuestos</b><small id="nPre">Con tus tarifas y firma</small></a>
+      <a class="tile nuevo" href="/planos/?nuevo=pres"><span class="ic" style="background:rgba(255,255,255,.14)">＋</span><b>Nuevo presupuesto</b><small>En PDF para enviar</small></a>
+      <a class="tile" href="/clientes/?vista=partes"><span class="ic" style="background:#F1E8F8">📝</span><b>Partes de trabajo</b><small id="nPar">Con firma del cliente</small></a>
+      <a class="tile nuevo" href="/clientes/?parte=nuevo"><span class="ic" style="background:rgba(255,255,255,.14)">＋</span><b>Nuevo parte</b><small>Al terminar un trabajo</small></a>
+      <a class="tile" id="tCon" href="/contactos/"><span class="ic" style="background:#E3F0FC">📨</span><b>Contactos web</b><small id="nCon">Peticiones de la web</small></a>
+      <a class="tile" id="tEst" href="/estadisticas/"><span class="ic" style="background:#E3F4EA">📊</span><b>Estadísticas</b><small>Cómo va el negocio</small></a>
+      <a class="tile" href="/material/"><span class="ic" style="background:#FFF1E3">📦</span><b>Material</b><small id="nMat">Furgoneta e inventario</small></a>
+    </div>
+    <div id="avisoPlan"></div>
+    <div id="avisos"></div>
+    <button class="avisosBtn" id="bAvisos"><span class="ic">🔔</span><span><b>Avisos al móvil</b><small id="avEstado">Te avisa al llegar un contacto o cuando aceptan un presupuesto</small></span></button>
+    <button class="avisosBtn" id="bForm" hidden><span class="ic">🔗</span><span><b>Formulario de contacto</b><small>Enlace para tu web, WhatsApp o redes</small></span></button>
+    <button class="avisosBtn" id="bEquipo" hidden><span class="ic">👷</span><span><b>Equipo</b><small id="eqEstado">Añade a un compañero y mira lo que hace</small></span></button>
+    <button class="salir" id="bSalir">Cerrar sesión</button>
+  </main>
+</section>
+
+<div class="velo" id="vEquipo"><div class="hoja"><h2>👷 Equipo <button data-cerrar>×</button></h2><div id="eqCuerpo"></div></div></div>
+<div class="velo" id="vForm"><div class="hoja"><h2>🔗 Formulario de contacto <button data-cerrar>×</button></h2><div id="fmCuerpo"></div></div></div>
+<div class="velo" id="vAvisos"><div class="hoja"><h2>🔔 Avisos al móvil <button data-cerrar>×</button></h2><div id="avCuerpo"></div></div></div>
+<script src="/config.js"></script>
+<script src="/nube.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const LOCAL="almara-local-ok"; // acceso sin Supabase configurado
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hoy=()=>new Date().toISOString().slice(0,10);
+const dias=f=>Math.round((new Date(f+"T12:00:00")-new Date(hoy()+"T12:00:00"))/864e5);
+const cuando=d=>d<0?`hace ${-d} día${d===-1?"":"s"}`:d===0?"hoy":d===1?"mañana":`en ${d} días`;
+const lee=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const volver=new URLSearchParams(location.search).get("volver");
+
+function dentro(){return Nube.configurado()?!!Nube.sesion():localStorage.getItem(LOCAL)==="1"}
+const CFG=window.ALMARA_CONFIG||{},PRODUCTO=CFG.producto||"App para instaladores";
+document.title=PRODUCTO;document.querySelectorAll("[data-producto]").forEach(e=>e.textContent=PRODUCTO);
+let modoAlta=false; // false = entrar · true = crear cuenta
+function pintarModo(){$("bEntrar").textContent=modoAlta?"Crear cuenta":"Entrar";$("pass").autocomplete=modoAlta?"new-password":"current-password";
+  $("bModo").textContent=modoAlta?"Ya tengo cuenta · Entrar":"¿Tu empresa aún no tiene cuenta? Crear cuenta gratis";$("bModo").hidden=!Nube.configurado()}
+function verAcceso(alta,txt){$("acceso").style.display="flex";$("inicio").style.display="none";$("avisoConf").hidden=Nube.configurado();
+  $("fAcceso").hidden=!!alta;$("fAlta").hidden=!alta;if(txt)$("altaTxt").textContent=txt;pintarModo()}
+// Con sesión pero sin empresa: hay que darla de alta (o esperar a que te añadan) antes de entrar
+function sinAcceso(){if(Nube.deBaja()){verAcceso(true,"Tu empresa te ha dado de baja en la app. Si es un error, habla con tu administrador.");$("fAlta").querySelectorAll("label,input,#bAlta").forEach(e=>e.hidden=true);return true}
+  if(Nube.sinEmpresa()){verAcceso(true);return true}return false}
+function mostrar(){
+  if(!dentro()){verAcceso(false);return}
+  if(Nube.configurado()&&sinAcceso())return;
+  if(volver&&volver.startsWith("/")&&!volver.startsWith("//")){location.replace(volver);return}
+  $("acceso").style.display="none";$("inicio").style.display="block";pintarInicio();
+  Nube.cargarPerfil().catch(()=>{}).then(()=>{if(Nube.configurado()&&sinAcceso())throw 0;pintarInicio();return Nube.sincronizar()}).then(async()=>{try{if(Nube.sesion()&&Nube.esAdmin()){const c=await Nube.api("contactos?select=*&order=creado.desc&limit=500");localStorage.setItem("almara-contactos-cache",JSON.stringify(c))}}catch(e){}pintarInicio();estadoNube()}).catch(()=>{});
+}
+function estadoNube(){const e=Nube.estado();$("nubeTxt").innerHTML=Nube.configurado()?`<span style="color:${e.c||"#9FB4CF"}">☁︎</span> ${esc(e.t||"Conectando…")}<br><small>${esc((Nube.sesion()||{user:{}}).user.email||"")}</small>`:"Solo en este móvil"}
+function pintarInicio(){
+  const h=new Date().getHours(),pf=Nube.perfil()||{},adm=Nube.esAdmin(),vc=Nube.verComo();
+  $("saludo").textContent=vc?"Datos de "+vc.nombre:(h<13?"Buenos días":h<21?"Buenas tardes":"Buenas noches")+(pf.nombre?", "+pf.nombre:"");
+  $("empNom").textContent=pf.empresa||PRODUCTO;$("bForm").hidden=!adm||!Nube.configurado()||!pf.empresa_id;$("bAvisos").hidden=!CFG.avisos;
+  const dp=Nube.diasPrueba();$("avisoPlan").innerHTML=!Nube.activa()?`<div class="estadoAv" style="background:#FDECEC;margin-top:14px"><b>Tu periodo de prueba ha terminado.</b> Puedes ver tus datos, pero no se guardan cambios nuevos.${adm?" Escríbenos para activar la suscripción"+(CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":"")+".":" Avisa a tu administrador."}</div>`
+    :dp!==null&&dp<=10?`<div class="estadoAv" style="background:#FFF8EC;margin-top:14px">Te queda${dp===1?"":"n"} <b>${Math.max(dp,0)} día${dp===1?"":"s"}</b> de prueba.${adm&&CFG.soporte?" Para seguir después, escríbenos: <b>"+esc(CFG.soporte)+"</b>":""}</div>`:"";
+  $("tCon").hidden=$("tEst").hidden=!adm;$("bEquipo").hidden=!adm||!Nube.configurado();
+  const cl=(lee("almara-clientes-v1")||{}).clientes||[],pl=(lee("almara-planos-v1")||{}).proy||[],pr=(lee("almara-pres-v1")||{}).lista||[];
+  if(cl.length)$("nCli").textContent=cl.length+" cliente"+(cl.length>1?"s":"");
+  if(pl.length)$("nPla").textContent=pl.length+" plano"+(pl.length>1?"s":"");
+  const np=cl.reduce((n,c)=>n+(c.trabajos||[]).length,0),pend=cl.reduce((n,c)=>n+(c.trabajos||[]).filter(t=>t.estado==="pendiente").length,0);if(np)$("nPar").textContent=np+" parte"+(np>1?"s":"")+(pend?" · "+pend+" pendiente"+(pend>1?"s":""):"");
+  if(pr.length)$("nPre").textContent=pr.length+" presupuesto"+(pr.length>1?"s":"");
+  const av=[];for(const c of cl){const m=c.mant;if(!m||!m.activo)continue;
+    if(m.proxima&&dias(m.proxima)<=30)av.push({c,d:dias(m.proxima),t:"Revisión"});if(m.fin&&dias(m.fin)<=30)av.push({c,d:dias(m.fin),t:"Renovar contrato"})}
+  av.sort((a,b)=>a.d-b.d);
+  // Otros avisos: contactos nuevos, presupuestos aceptados, material bajo e inventario del mes
+  const ct=adm?lee("almara-contactos-cache")||[]:[],ctN=ct.filter(c=>c.estado==="nuevo").length;$("nCon").textContent=ctN?ctN+" nuevo"+(ctN>1?"s":"")+" sin atender":"Peticiones de la web";
+  const mat=lee("almara-material-v1")||{items:[],inventarios:[]},bajo=(mat.items||[]).filter(i=>i.min>0&&i.stock<=i.min),mes=hoy().slice(0,7),inv=(mat.inventarios||[]).some(v=>v.mes===mes);
+  if((mat.items||[]).length)$("nMat").textContent=bajo.length?bajo.length+" por reponer":(inv?"Inventario al día":"Inventario del mes pendiente");
+  const otros=[];if(ctN)otros.push(`<a href="/contactos/"><span>📨 ${ctN} contacto${ctN>1?"s":""} nuevo${ctN>1?"s":""} de la web</span><b style="color:var(--acento)">Ver</b></a>`);
+  for(const p of pr.filter(p=>p.enlace&&p.enlace.estado==="aceptado"&&p.enlace.respondido&&dias(p.enlace.respondido.slice(0,10))>=-14))otros.push(`<a href="/planos/?pres=${encodeURIComponent(p.id)}"><span>✅ ${esc(p.numero)} aceptado por ${esc(p.enlace.firma_nombre||p.cliente.nombre||"el cliente")}</span><b style="color:#2E9D5B">${cuando(dias(p.enlace.respondido.slice(0,10)))}</b></a>`);
+  if(bajo.length)otros.push(`<a href="/material/"><span>📦 Reponer: ${esc(bajo.slice(0,3).map(i=>i.nombre).join(", "))}${bajo.length>3?"…":""}</span><b style="color:var(--rojo)">${bajo.length}</b></a>`);
+  if((mat.items||[]).length&&!inv&&new Date().getDate()>=25)otros.push(`<a href="/material/?inv=1"><span>📋 Inventario de la furgoneta de este mes</span><b style="color:var(--nar)">Hacer</b></a>`);
+  const mh=av.map(a=>`<a href="/clientes/?id=${encodeURIComponent(a.c.id)}"><span>🔧 ${esc(a.c.nombre)} · ${a.t}</span><b style="color:${a.d<0?"var(--rojo)":"var(--nar)"};white-space:nowrap">${cuando(a.d)}</b></a>`);
+  const todos=otros.concat(mh);$("avisos").innerHTML=todos.length?`<h3>🔔 Avisos</h3><div class="alerta">${todos.join("")}</div>`:"";
+  estadoNube()}
+$("verPass").onclick=()=>{const p=$("pass");p.type=p.type==="password"?"text":"password";$("verPass").textContent=p.type==="password"?"Ver":"Ocultar"};
+$("fAcceso").onsubmit=async e=>{e.preventDefault();$("error").textContent="";const b=$("bEntrar");
+  if(!Nube.configurado()){localStorage.setItem(LOCAL,"1");mostrar();return}
+  const mail=$("email").value.trim(),pw=$("pass").value;
+  if(modoAlta&&pw.length<8){$("error").textContent="La contraseña tiene que tener al menos 8 caracteres.";return}
+  b.disabled=true;b.textContent=modoAlta?"Creando…":"Entrando…";
+  try{if(modoAlta){const r=await Nube.registrar(mail,pw);
+      if(r&&r.confirmar){modoAlta=false;$("pass").value="";$("error").style.color="#BFEBCB";$("error").textContent="Te hemos enviado un correo. Pulsa el enlace para confirmar tu cuenta y después entra aquí.";b.disabled=false;pintarModo();return}}
+    else await Nube.entrar(mail,pw);
+    $("pass").value="";mostrar()}
+  catch(err){const m=String(err.message||err);$("error").style.color="";$("error").textContent=/already|registered|exists/i.test(m)?"Ya hay una cuenta con ese correo. Pulsa «Ya tengo cuenta».":/invalid/i.test(m)?"Correo o contraseña incorrectos":/abort|fetch|network/i.test(m)?"Sin conexión. Inténtalo de nuevo.":/confirm/i.test(m)?"Falta confirmar tu correo: pulsa el enlace que te enviamos al registrarte.":/password/i.test(m)?"La contraseña es demasiado corta o sencilla.":m}
+  b.disabled=false;pintarModo()};
+$("bModo").onclick=()=>{modoAlta=!modoAlta;$("error").textContent="";pintarModo()};
+$("fAlta").onsubmit=async e=>{e.preventDefault();const b=$("bAlta"),er=$("errorAlta");er.textContent="";b.disabled=true;b.textContent="Creando…";
+  try{const r=await Nube.crearEmpresa($("aEmp").value.trim(),$("aNom").value.trim());
+    if(r==="ok"){mostrar()}else er.textContent={falta_empresa:"Pon el nombre de tu empresa.",falta_nombre:"Pon tu nombre."}[r]||r}
+  catch(err){er.textContent=/abort|fetch|network|conexi/i.test(String(err.message))?"Sin conexión. Inténtalo de nuevo.":"No se ha podido crear: "+err.message}
+  b.disabled=false;b.textContent="Crear mi empresa"};
+const cerrar=()=>{Nube.salir();localStorage.removeItem(LOCAL);localStorage.removeItem("almara-perfil");location.replace("/")};
+$("bSalirAlta").onclick=cerrar;
+$("bSalir").onclick=cerrar;
+// ---------- Formulario público de contacto (solo administrador) ----------
+$("bForm").onclick=()=>{const pf=Nube.perfil()||{},url=location.origin+"/c/?e="+encodeURIComponent(pf.empresa_id||"");
+  $("fmCuerpo").innerHTML=`<p style="margin:0 0 6px;color:var(--gris);font-size:14px;line-height:1.45">Este es el formulario de contacto de <b>${esc(pf.empresa||"tu empresa")}</b>. Lo que escriban tus clientes te llega a <b>Contactos web</b>. Ponlo en tu web, en tu perfil de Instagram o envíalo por WhatsApp.</p>
+    <div class="canal" style="font-size:13px">${esc(url)}</div><button class="bt az" id="fmCopiar">Copiar enlace</button><a class="bt" href="${esc(url)}" target="_blank" rel="noopener">Abrir</a>`;
+  $("fmCopiar").onclick=async()=>{try{await navigator.clipboard.writeText(url);$("fmCopiar").textContent="Copiado ✓"}catch(e){prompt("Copia el enlace:",url)}};
+  $("vForm").classList.add("on")};
+$("vForm").addEventListener("click",e=>{if(e.target===$("vForm")||e.target.closest("[data-cerrar]"))$("vForm").classList.remove("on")});
+// ---------- Avisos al móvil (app ntfy) ----------
+let AV=null;
+async function leerAvisos(){try{const r=await Nube.api("ajustes_avisos?id=eq.1&select=*");AV=r&&r[0]||null}catch(e){AV=undefined}return AV}
+async function guardarAvisos(cambios){await Nube.api("ajustes_avisos?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:1,app_url:location.origin,...cambios})});await leerAvisos()}
+function estadoBoton(){pushActual().then(sub=>{$("avEstado").textContent=sub?"Activados en este dispositivo ✓":AV&&AV.ntfy_tema?"Activados con ntfy ✓":"Te avisa al llegar un contacto o cuando aceptan un presupuesto"})}
+// Notificaciones propias (Web Push)
+const VAPID=(window.ALMARA_CONFIG||{}).vapidPublicKey||"";
+const enApp=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const esIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const soportaPush=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+const aBytes=b=>{const p="=".repeat((4-b.length%4)%4),r=atob((b+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+async function pushActual(){try{if(!soportaPush())return null;const r=await navigator.serviceWorker.getRegistration("/");return r?await r.pushManager.getSubscription():null}catch(e){return null}}
+async function contarPush(){try{const r=await Nube.api("push_subs?select=endpoint");return r.length}catch(e){return 0}}
+function nombreDisp(){const u=navigator.userAgent;return /iPhone/.test(u)?"iPhone":/iPad/.test(u)||esIOS()?"iPad":/Android/.test(u)?"Android":/Mac/.test(u)?"Mac":/Windows/.test(u)?"Windows":"Navegador"}
+async function guardarSub(sub){const j=sub.toJSON();await Nube.api("push_subs?on_conflict=endpoint",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+  body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,dispositivo:nombreDisp()})})}
+async function pintarPush(){const el=$("avPush");if(!el)return;const sub=await pushActual();
+  if(!VAPID){el.innerHTML=`<p style="color:var(--gris);font-size:14px">Falta la clave de notificaciones en config.js.</p>`;return}
+  if(!soportaPush()||(esIOS()&&!enApp())){el.innerHTML=esIOS()&&!enApp()
+    ?`<div class="estadoAv" style="background:#FFF8EC">Para recibir notificaciones de la app en el iPhone, abre la app desde su <b>icono en la pantalla de inicio</b>, no desde Safari.<br><br>Si aún no lo tienes: en Safari pulsa <b>Compartir → Añadir a pantalla de inicio</b>, ábrela desde ese icono y vuelve aquí.</div>`
+    :`<div class="estadoAv" style="background:#FFF8EC">Este navegador no admite notificaciones. Usa la app añadida a la pantalla de inicio del iPhone (iOS 16.4 o posterior).</div>`;return}
+  if(sub&&Notification.permission==="granted"){el.innerHTML=`<div class="estadoAv" style="background:#E3F4EA">✓ Activadas en este ${esc(nombreDisp())}. Te llegarán con el icono de la app aunque tengas la app cerrada.</div>
+    <button class="bt az" id="pProbar">Enviar aviso de prueba</button><button class="bt" id="pQuitar">Desactivar en este dispositivo</button><div id="pRes" style="font-size:13px;color:var(--gris);margin-top:6px"></div>`;
+    $("pProbar").onclick=async()=>{$("pRes").textContent="Enviando… Bloquea el móvil o sal al inicio para verlo.";try{const r=await Nube.api("rpc/probar_aviso",{method:"POST",body:"{}"});$("pRes").textContent=r==="ok"?"Enviado: te tiene que llegar en unos segundos.":"No hay dispositivos activados."}catch(e){$("pRes").textContent="No se ha podido enviar: "+e.message}};
+    $("pQuitar").onclick=async()=>{const j=sub.toJSON();await sub.unsubscribe().catch(()=>{});await Nube.api("push_subs?endpoint=eq."+encodeURIComponent(j.endpoint),{method:"DELETE"}).catch(()=>{});pintarAvisos()};
+    return}
+  if(Notification.permission==="denied"){el.innerHTML=`<div class="estadoAv" style="background:#FDECEC">Las notificaciones de la app están bloqueadas. Actívalas en <b>Ajustes → Notificaciones</b> y vuelve aquí.</div>`;return}
+  el.innerHTML=`<p style="margin:0 0 8px;color:var(--gris);font-size:14px">Te llegarán al momento, con el icono de la app y aunque tengas la app cerrada.</p><button class="bt az" id="pActivar">Activar notificaciones en este ${esc(nombreDisp())}</button><div id="pRes" style="font-size:13px;color:var(--gris);margin-top:6px"></div>`;
+  $("pActivar").onclick=async()=>{const res=$("pRes");try{res.textContent="Pidiendo permiso…";
+      const perm=await Notification.requestPermission();if(perm!=="granted"){res.textContent="No has dado permiso. Puedes activarlo en Ajustes → Notificaciones.";return}
+      const reg=await navigator.serviceWorker.register("/sw.js");await navigator.serviceWorker.ready;
+      const s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:aBytes(VAPID)});
+      await guardarSub(s);if(!AV&&Nube.esAdmin())await guardarAvisos({}).catch(()=>{});pintarAvisos()}
+    catch(e){res.textContent="No se ha podido activar: "+e.message}}}
+function nuevoCanal(){const a="abcdefghijkmnpqrstuvwxyz23456789",r=crypto.getRandomValues(new Uint8Array(14));return"avisos-"+[...r].map(x=>a[x%a.length]).join("")}
+async function pintarAvisos(){const c=$("avCuerpo");
+  if(!Nube.configurado()||!Nube.sesion()){c.innerHTML=`<p>Para recibir avisos tienes que tener la nube conectada y haber entrado con tu cuenta.</p>`;return}
+  c.innerHTML=`<p style="color:var(--gris)">Cargando…</p>`;
+  if(Nube.esTecnico()){c.innerHTML=`<p style="margin:0 0 8px;color:var(--gris);font-size:14px">Te avisará cuando un cliente abra, acepte o rechace uno de tus presupuestos.</p><div id="avPush"></div>`;pintarPush();return}
+  await leerAvisos();
+  if(AV===undefined){c.innerHTML=`<div class="estadoAv" style="background:#FDECEC">No se han podido leer los ajustes. Comprueba que tienes conexión.</div>`;return}
+  const t=AV&&AV.ntfy_tema;
+  const nPush=await contarPush();
+  let h=`<h3 style="margin:4px 0 6px">📱 Notificaciones de la app</h3><div id="avPush"></div><h3 style="margin:22px 0 6px">Alternativa: app ntfy</h3>`;
+  h+=t?`<div class="estadoAv" style="background:#E3F4EA">✓ Avisos de ntfy activados en el canal:</div><div class="canal">${esc(t)}</div>`
+    :`<p style="margin:0 0 6px;color:var(--gris);font-size:14px">Si las notificaciones de la app no te funcionan, puedes recibirlas con la app gratuita ntfy:</p>`;
+  h+=`<div class="paso"><span class="n">1</span><div>Instala la app gratuita <b>ntfy</b>.<br><a class="bt" href="https://apps.apple.com/app/id1625396347" target="_blank" rel="noopener">Abrir en la App Store</a></div></div>
+  <div class="paso"><span class="n">2</span><div>${t?"Tu canal privado ya está creado.":"Crea tu canal privado (un nombre secreto que solo conoces tú)."}<br>
+    ${t?`<button class="bt" id="avCopiar">Copiar nombre del canal</button>`:`<button class="bt az" id="avCrear">Crear mi canal</button>`}</div></div>
+  <div class="paso"><span class="n">3</span><div>Abre ntfy, pulsa <b>+</b>, pega el nombre del canal en «Topic name» y pulsa <b>Subscribe</b>. Cuando te pida permiso para notificaciones, pulsa <b>Permitir</b>.</div></div>
+  <div class="paso"><span class="n">4</span><div>Comprueba que funciona.<br><button class="bt az" id="avProbar" ${t?"":"disabled style='opacity:.4'"}>Enviar aviso de prueba</button><span id="avRes" style="font-size:13px;color:var(--gris)"></span></div></div>`;
+  if(t||nPush)h+=`<h3 style="margin:16px 0 4px">Qué quieres que te avise</h3>
+    <label class="sw"><span>📨 Contacto nuevo desde la web</span><input type="checkbox" data-k="contactos" ${AV.contactos?"checked":""}></label>
+    <label class="sw"><span>✅ Presupuesto aceptado o rechazado</span><input type="checkbox" data-k="presupuestos" ${AV.presupuestos?"checked":""}></label>
+    <label class="sw"><span>👀 El cliente abre el presupuesto</span><input type="checkbox" data-k="visto" ${AV.visto?"checked":""}></label>
+    <p style="font-size:12px;color:var(--gris);line-height:1.4;margin-top:12px">Al tocar el aviso se abre la app en la pantalla correspondiente. Los avisos pasan por el servicio gratuito ntfy.sh; el nombre del canal es secreto, no lo compartas.</p>
+    ${t?`<button class="bt" id="avCambiar" style="margin-top:6px">Cambiar el canal de ntfy (si lo has compartido por error)</button>`:""}`;
+  c.innerHTML=h;estadoBoton();pintarPush();
+  const crear=async()=>{try{await guardarAvisos({ntfy_tema:nuevoCanal()});pintarAvisos()}catch(e){alert("No se ha podido crear el canal: "+e.message)}};
+  if($("avCrear"))$("avCrear").onclick=crear;
+  if($("avCambiar"))$("avCambiar").onclick=async()=>{if(confirm("Se creará un canal nuevo y tendrás que suscribirte otra vez en ntfy. ¿Seguir?"))crear()};
+  if($("avCopiar"))$("avCopiar").onclick=async()=>{try{await navigator.clipboard.writeText(t);$("avCopiar").textContent="Copiado ✓"}catch(e){prompt("Copia el nombre del canal:",t)}};
+  if($("avProbar"))$("avProbar").onclick=async()=>{$("avRes").textContent=" Enviando…";try{const r=await Nube.api("rpc/probar_aviso",{method:"POST",body:"{}"});$("avRes").textContent=r==="ok"?" Enviado: te tiene que llegar en unos segundos.":" Falta crear el canal."}catch(e){$("avRes").textContent=" No se ha podido enviar."}};
+  c.querySelectorAll("[data-k]").forEach(i=>i.onchange=async()=>{try{await guardarAvisos({[i.dataset.k]:i.checked})}catch(e){i.checked=!i.checked;alert("No se ha podido guardar")}})}
+$("bAvisos").onclick=()=>{$("vAvisos").classList.add("on");pintarAvisos()};
+$("vAvisos").addEventListener("click",e=>{if(e.target===$("vAvisos")||e.target.closest("[data-cerrar]"))$("vAvisos").classList.remove("on")});
+// ---------- Equipo (solo administrador) ----------
+async function pintarEquipo(){const c=$("eqCuerpo");c.innerHTML=`<p style="color:var(--gris)">Cargando…</p>`;let L;
+  let INV=[];try{L=await Nube.equipo();INV=await Nube.invitaciones().catch(()=>[])}catch(e){c.innerHTML=`<div class="estadoAv" style="background:#FDECEC">No se ha podido leer el equipo. Comprueba que tienes conexión.</div>`;return}
+  const yo=Nube.yo(),vc=Nube.verComo();
+  let h=`<p style="margin:0 0 6px;color:var(--gris);font-size:14px;line-height:1.45">Cada técnico ve solo sus clientes, planos, presupuestos, partes y el material de su furgoneta. No ve los contactos de la web ni las estadísticas. Tú lo ves todo.</p>`;
+  for(const m of L){const esYo=m.user_id===yo,baja=m.rol==="baja";
+    h+=`<div class="sw" style="align-items:flex-start"><span><b>${esc(m.nombre)}</b>${esYo?" (tú)":""}${baja?` <span style="color:var(--rojo);font-size:12px;font-weight:700">DE BAJA</span>`:""}<br><small style="color:var(--gris)">${esc(m.email)}${m.serie?" · serie "+esc(m.serie)+" (P-"+new Date().getFullYear()+"-"+esc(m.serie)+"001)":""}</small></span>
+      ${esYo?"":`<span style="text-align:right;flex:none"><button class="bt az" data-ver="${esc(m.user_id)}">${vc&&vc.uid===m.user_id?"Viendo ✓":"Ver sus datos"}</button><br><button class="bt" data-baja="${esc(m.user_id)}" data-act="${baja?1:0}">${baja?"Reactivar":"Dar de baja"}</button></span>`}</div>`}
+  if(vc)h+=`<button class="bt" id="eqVolver" style="margin-top:8px">← Volver a mis datos</button>`;
+  for(const i of INV)h+=`<div class="sw" style="align-items:flex-start"><span><b>${esc(i.nombre)}</b> <span style="color:var(--nar);font-size:12px;font-weight:700">INVITADO</span><br><small style="color:var(--gris)">${esc(i.email)} · serie ${esc(i.serie)} · aún no ha creado su cuenta</small></span><span style="flex:none"><button class="bt" data-quitar="${esc(i.email)}">Quitar</button></span></div>`;
+  h+=`<h3 style="margin:22px 0 6px">Añadir un compañero</h3>
+  <div class="paso"><span class="n">1</span><div>Rellena sus datos y pulsa <b>Añadir</b>:
+    <input id="eqNom" placeholder="Nombre (ej. Juan)" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px">
+    <input id="eqMail" type="email" inputmode="email" placeholder="Su correo" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px">
+    <input id="eqSerie" maxlength="3" placeholder="Letra para sus números (ej. J)" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px;text-transform:uppercase">
+    <small style="color:var(--gris);display:block;margin-top:4px">Sus presupuestos saldrán como P-${new Date().getFullYear()}-J001 y sus partes como PT-${new Date().getFullYear()}-J001, para que no se mezclen con los tuyos.</small>
+    <button class="bt az" id="eqAdd" style="margin-top:8px">Añadir</button><div id="eqRes" style="font-size:13.5px;margin-top:6px"></div></div></div>
+  <div class="paso"><span class="n">2</span><div>Pásale esta dirección: <b>${esc(location.origin)}</b>. Que pulse <b>Crear cuenta</b> con <b>ese mismo correo</b>: entrará directamente en tu empresa como técnico.</div></div>`;
+  c.innerHTML=h;
+  c.querySelectorAll("[data-ver]").forEach(b=>b.onclick=()=>{const m=L.find(x=>x.user_id===b.dataset.ver);Nube.ver({uid:m.user_id,nombre:m.nombre,serie:m.serie});location.href="/"});
+  c.querySelectorAll("[data-baja]").forEach(b=>b.onclick=async()=>{const act=b.dataset.act==="1",m=L.find(x=>x.user_id===b.dataset.baja);
+    if(!act&&!confirm(`¿Dar de baja a ${m.nombre}? No podrá entrar ni ver nada. Sus clientes y presupuestos se quedan guardados para ti.`))return;
+    try{await Nube.api("rpc/cambiar_estado_tecnico",{method:"POST",body:JSON.stringify({p_user:m.user_id,p_activo:act})});pintarEquipo()}catch(e){alert("No se ha podido cambiar: "+e.message)}});
+  if($("eqVolver"))$("eqVolver").onclick=()=>{Nube.ver(null);location.href="/"};
+  c.querySelectorAll("[data-quitar]").forEach(b=>b.onclick=async()=>{try{await Nube.api("rpc/quitar_invitacion",{method:"POST",body:JSON.stringify({p_email:b.dataset.quitar})});pintarEquipo()}catch(e){alert("No se ha podido quitar: "+e.message)}});
+  $("eqAdd").onclick=async()=>{const res=$("eqRes"),nom=$("eqNom").value.trim(),mail=$("eqMail").value.trim(),se=$("eqSerie").value.trim().toUpperCase();
+    if(!nom||!mail){res.style.color="var(--rojo)";res.textContent="Pon el nombre y el correo.";return}
+    if(!/^[A-Z]{1,3}$/.test(se)){res.style.color="var(--rojo)";res.textContent="La letra tiene que ser de 1 a 3 letras (sin acentos ni números).";return}
+    res.style.color="var(--gris)";res.textContent="Añadiendo…";
+    try{const r=await Nube.api("rpc/guardar_tecnico",{method:"POST",body:JSON.stringify({p_email:mail,p_nombre:nom,p_serie:se})});
+      const msg={ok:"",eres_tu:"Ese correo es el tuyo.",serie_repetida:"Esa letra ya la usa otra persona. Elige otra.",falta_serie:"Falta la letra.",datos_mal:"Revisa el nombre, el correo y la letra.",otra_empresa:"Ese correo ya pertenece a otra empresa.",caducada:"Tu periodo de prueba ha terminado: no se pueden añadir compañeros."}[r];
+      if(r==="ok"||r==="invitado")pintarEquipo();else{res.style.color="var(--rojo)";res.textContent=msg||r}}
+    catch(e){res.style.color="var(--rojo)";res.textContent="No se ha podido añadir: "+e.message}}}
+$("bEquipo").onclick=()=>{$("vEquipo").classList.add("on");pintarEquipo()};
+$("vEquipo").addEventListener("click",e=>{if(e.target===$("vEquipo")||e.target.closest("[data-cerrar]"))$("vEquipo").classList.remove("on")});
+mostrar();
+if(CFG.avisos&&Nube.sesion())leerAvisos().then(estadoBoton).then(async()=>{const s=await pushActual();if(s&&Notification.permission==="granted")guardarSub(s).catch(()=>{})});
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("/sw.js").catch(()=>{});
+</script>
+</body>
+</html>

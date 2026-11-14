@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B1F3A">
+<title>Contacto</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:#F2F5F9;color:#0B1F3A;-webkit-text-size-adjust:100%}
+header{background:#0B1F3A;color:#fff;padding:calc(env(safe-area-inset-top,0px) + 26px) 20px 22px;text-align:center}
+header h1{margin:0;font-size:24px;letter-spacing:.02em}
+header p{margin:6px 0 0;color:#B8C7DA;font-size:14.5px}
+main{max-width:520px;margin:0 auto;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 30px)}
+.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 1px 3px rgba(11,31,58,.08)}
+label{display:block;font-size:13px;font-weight:700;color:#4A5B73;margin:14px 0 5px}
+label:first-child{margin-top:0}
+input,textarea{display:block;width:100%;padding:12px;border:1px solid #D5DDE8;border-radius:10px;font:inherit;font-size:16px;color:inherit;background:#fff}
+input:focus,textarea:focus{outline:2px solid #1E88E5;outline-offset:1px}
+textarea{min-height:110px;resize:vertical}
+button{display:block;width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:#0B1F3A;color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}
+button:disabled{opacity:.5}
+.nota{font-size:12.5px;color:#6B7A90;line-height:1.45;margin:12px 0 0}
+.msg{border-radius:12px;padding:14px;font-size:15px;line-height:1.45}
+.ok{background:#E3F4EA}.mal{background:#FDECEC;margin-top:12px}
+.trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><h1 id="emp">Contacto</h1><p>Cuéntanos qué necesitas y te llamamos</p></header>
+<main>
+  <div class="card" id="caja">
+    <form id="f" novalidate>
+      <label for="n">Nombre</label><input id="n" maxlength="120" autocomplete="name" required>
+      <label for="t">Teléfono</label><input id="t" type="tel" inputmode="tel" maxlength="40" autocomplete="tel">
+      <label for="e">Correo (opcional)</label><input id="e" type="email" inputmode="email" maxlength="160" autocomplete="email">
+      <label for="l">Localidad</label><input id="l" maxlength="120" autocomplete="address-level2">
+      <label for="s">¿Qué necesitas?</label><input id="s" maxlength="80" placeholder="Ej. instalación, avería, presupuesto…">
+      <label for="m">Mensaje</label><textarea id="m" maxlength="2000"></textarea>
+      <div class="trampa" aria-hidden="true"><label for="w">No rellenar</label><input id="w" tabindex="-1" autocomplete="off"></div>
+      <button id="b" type="submit">Enviar</button>
+      <div class="msg mal" id="err" hidden></div>
+      <p class="nota">Usaremos estos datos solo para responder a tu consulta.</p>
+    </form>
+  </div>
+</main>
+<script src="/config.js"></script>
+<script>
+"use strict";
+(() => {
+  const C = window.ALMARA_CONFIG || {}, URLB = String(C.supabaseUrl || "").replace(/\/+$/, ""), KEY = String(C.supabaseAnonKey || "");
+  const $ = id => document.getElementById(id);
+  const emp = new URLSearchParams(location.search).get("e") || "";
+  const valido = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(emp);
+  const cab = { apikey: KEY, "Content-Type": "application/json" };
+  const fuera = t => { $("caja").innerHTML = ""; const d = document.createElement("div"); d.className = "msg mal"; d.style.marginTop = "0"; d.textContent = t; $("caja").appendChild(d); };
+  if (!valido || !URLB || !KEY) { fuera("Este enlace no es correcto. Pide a la empresa que te lo envíe de nuevo."); return; }
+  // Nombre de la empresa en la cabecera
+  fetch(URLB + "/rest/v1/rpc/nombre_empresa", { method: "POST", headers: cab, body: JSON.stringify({ p_empresa: emp }) })
+    .then(r => r.ok ? r.json() : undefined).then(n => { if (n) { $("emp").textContent = n; document.title = "Contacto · " + n; } else if (n === null) fuera("Este enlace ya no está activo."); })
+    .catch(() => {});
+  $("f").onsubmit = async ev => {
+    ev.preventDefault(); const v = id => $(id).value.trim(), er = $("err"); er.hidden = true;
+    if ($("w").value) return; // lo ha rellenado un robot
+    if (!v("n")) { er.textContent = "Pon tu nombre."; er.hidden = false; return; }
+    if (!v("t") && !v("e")) { er.textContent = "Pon un teléfono o un correo para poder responderte."; er.hidden = false; return; }
+    const b = $("b"); b.disabled = true; b.textContent = "Enviando…";
+    try {
+      const r = await fetch(URLB + "/rest/v1/contactos", { method: "POST", headers: { ...cab, Prefer: "return=minimal" },
+        body: JSON.stringify({ empresa_id: emp, nombre: v("n"), telefono: v("t") || null, email: v("e") || null, localidad: v("l") || null,
+          servicio: v("s") || null, mensaje: v("m") || null, origen: "Formulario de contacto" }) });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      $("caja").innerHTML = ""; const d = document.createElement("div"); d.className = "msg ok";
+      d.textContent = "¡Gracias! Hemos recibido tu mensaje y te responderemos lo antes posible."; $("caja").appendChild(d);
+    } catch (e) { er.textContent = "No se ha podido enviar. Comprueba tu conexión e inténtalo de nuevo."; er.hidden = false; b.disabled = false; b.textContent = "Enviar"; }
+  };
+})();
+</script>
+</body>
+</html>

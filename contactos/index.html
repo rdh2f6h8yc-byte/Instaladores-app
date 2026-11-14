@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#0B1F3A">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png">
+<link rel="stylesheet" href="/base.css">
+<title>Contactos</title>
+<style>.ct .top{display:flex;justify-content:space-between;gap:8px}.ct small{color:var(--gris);font-size:12.5px}.ct p{margin:6px 0 2px;font-size:14px;white-space:pre-wrap}
+.acc{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.acc a,.acc button{font-size:12.5px;font-weight:700;padding:8px 10px;border-radius:9px;background:var(--claro)}
+.acc .pri{background:var(--azul);color:#fff}</style>
+</head>
+<body>
+<header><a class="ib" href="/">⌂</a><div class="tit"><small>CONTACTOS WEB <span id="nubeEst" style="color:#8FA3BC">☁︎</span></small><b>Contactos</b></div><button class="ib" id="bNuevo" title="Añadir">＋</button></header>
+<main id="main"><div class="vacio">Cargando…</div></main>
+<div class="velo" id="vNuevo"><div class="hoja"><h2>Añadir contacto <button class="x" data-cerrar>×</button></h2>
+  <p style="color:var(--gris);font-size:13px;margin:0 0 6px">Para apuntar a alguien que te ha llamado o escrito por otro medio.</p>
+  <label>Nombre<input id="nN"></label><div class="g2"><label>Teléfono<input id="nT" inputmode="tel"></label><label>Población<input id="nL"></label></div>
+  <label>Email<input id="nE" inputmode="email"></label>
+  <label>Servicio<select id="nS"><option>Starlink</option><option>WiFi</option><option>Redes / rack</option><option>Videovigilancia</option><option>Electricidad</option><option>ICT</option><option>Otro</option></select></label>
+  <label>Mensaje / qué necesita<textarea id="nM" rows="3"></textarea></label>
+  <label>¿Cómo nos ha conocido?<input id="nO" placeholder="Llamada, WhatsApp, Google, recomendación…"></label>
+  <button class="btn az" id="nOk">Guardar contacto</button></div></div>
+<div id="aviso"></div>
+<script src="/config.js"></script><script src="/nube.js"></script>
+<script>
+"use strict";
+if(!Nube.requerir()||!Nube.soloAdmin())throw new Error("Solo el administrador");
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const aviso=(t,ms)=>{const a=$("aviso");a.textContent=t;a.style.display=t?"block":"none";clearTimeout(aviso.t);if(t)aviso.t=setTimeout(()=>a.style.display="none",ms||1800)};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const tel=t=>String(t||"").replace(/[^\d+]/g,""),wa=t=>{let n=tel(t).replace(/^\+/,"");if(n.length===9)n="34"+n;return n};
+const CACHE="almara-contactos-cache";
+let L=[],filtro="nuevo";
+const EST={nuevo:["Nuevo","n"],contactado:["Contactado","a"],cliente:["Ya es cliente","v"],descartado:["Descartado",""]};
+function cuando(d){const s=(Date.now()-new Date(d))/1000;if(s<3600)return"hace "+Math.max(1,Math.round(s/60))+" min";if(s<86400)return"hace "+Math.round(s/3600)+" h";const n=Math.round(s/86400);return n===1?"ayer":n<30?"hace "+n+" días":new Date(d).toLocaleDateString("es-ES")}
+async function cargar(){try{L=JSON.parse(localStorage.getItem(CACHE))||[]}catch(e){}pintar();
+  if(!Nube.configurado()){$("main").innerHTML=`<div class="vacio">Conecta Supabase para recibir los contactos de la web.</div>`;return}
+  try{L=await Nube.api("contactos?select=*&order=creado.desc&limit=500");localStorage.setItem(CACHE,JSON.stringify(L));pintar()}
+  catch(e){aviso("Sin conexión: mostrando los últimos guardados",2500)}}
+function pintar(){const n=s=>L.filter(c=>c.estado===s).length;const F=L.filter(c=>filtro==="todos"||c.estado===filtro);
+  let h=`<div class="chips">${[["nuevo","Nuevos ("+n("nuevo")+")"],["contactado","Contactados ("+n("contactado")+")"],["cliente","Clientes"],["descartado","Descartados"],["todos","Todos"]].map(([k,l])=>`<button data-f="${k}" class="${filtro===k?"on":""}">${l}</button>`).join("")}</div>`;
+  if(!F.length)h+=`<div class="vacio">${filtro==="nuevo"?"No hay contactos nuevos.<br>Cuando alguien rellene el formulario de la web, aparecerá aquí.":"Nada por aquí."}</div>`;
+  for(const c of F){const e=EST[c.estado]||["",""];
+    h+=`<div class="card ct"><div class="top"><b>${esc(c.nombre)}</b><small>${cuando(c.creado)}</small></div>
+    <small>${[c.servicio,c.localidad,c.telefono,c.email].filter(Boolean).map(esc).join(" · ")}</small>${c.mensaje?`<p>${esc(c.mensaje)}</p>`:""}
+    <div><span class="tag ${e[1]}">${e[0]}</span>${c.origen?`<span class="tag">${esc(String(c.origen).replace(/^https?:\/\//,"").slice(0,40))}</span>`:""}</div>
+    <div class="acc">${c.telefono?`<a href="tel:${esc(tel(c.telefono))}">📞 Llamar</a><a href="https://wa.me/${esc(wa(c.telefono))}?text=${encodeURIComponent("Hola "+c.nombre.split(" ")[0]+", soy "+((Nube.perfil()||{}).nombre||"tu instalador")+((Nube.perfil()||{}).empresa?" de "+Nube.perfil().empresa:"")+". Te escribo por tu consulta"+(c.servicio?" sobre "+c.servicio:"")+".")}" target="_blank" rel="noopener">💬 WhatsApp</a>`:""}${c.email?`<a href="mailto:${esc(c.email)}">✉️ Email</a>`:""}
+    ${c.estado!=="cliente"?`<button class="pri" data-cli="${c.id}">👤 Pasar a cliente</button>`:""}${c.estado==="nuevo"?`<button data-est="contactado" data-id="${c.id}">✓ Contactado</button>`:""}${c.estado!=="descartado"&&c.estado!=="cliente"?`<button data-est="descartado" data-id="${c.id}">Descartar</button>`:""}${c.estado==="descartado"?`<button data-est="nuevo" data-id="${c.id}">Recuperar</button>`:""}</div></div>`}
+  $("main").innerHTML=h}
+async function cambiarEstado(id,estado){const c=L.find(x=>x.id===id);const ant=c.estado;c.estado=estado;pintar();
+  try{await Nube.api("contactos?id=eq."+id,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({estado})});localStorage.setItem(CACHE,JSON.stringify(L))}
+  catch(e){c.estado=ant;pintar();aviso("No se ha podido guardar: sin conexión",2500)}}
+$("main").onclick=async e=>{const f=e.target.closest("[data-f]");if(f){filtro=f.dataset.f;pintar();return}
+  const b=e.target.closest("[data-est]");if(b){cambiarEstado(b.dataset.id,b.dataset.est);return}
+  const k=e.target.closest("[data-cli]");if(k){const c=L.find(x=>x.id===k.dataset.cli);
+    let db;try{db=JSON.parse(localStorage.getItem("almara-clientes-v1"))||{clientes:[]}}catch(err){db={clientes:[]}}
+    const hoy=new Date().toISOString().slice(0,10);
+    const cli={id:uid(),tipo:"particular",nombre:c.nombre,tel:c.telefono||"",email:c.email||"",localidad:c.localidad||"",dir:"",nif:"",contacto:"",
+      notas:["Contacto web "+new Date(c.creado).toLocaleDateString("es-ES")+(c.servicio?" · "+c.servicio:""),c.mensaje].filter(Boolean).join("\n"),creado:hoy,act:new Date().toISOString(),trabajos:[],accesos:[]};
+    db.clientes.push(cli);localStorage.setItem("almara-clientes-v1",JSON.stringify(db));Nube.marcar("clientes");
+    await cambiarEstado(c.id,"cliente");location.href="/clientes/?id="+encodeURIComponent(cli.id)}};
+$("bNuevo").onclick=()=>$("vNuevo").classList.add("on");
+document.querySelectorAll(".velo").forEach(v=>v.addEventListener("click",e=>{if(e.target===v||e.target.closest("[data-cerrar]"))v.classList.remove("on")}));
+$("nOk").onclick=async()=>{const v=id=>$(id).value.trim();if(!v("nN")){aviso("Pon el nombre");return}
+  const c={nombre:v("nN"),telefono:v("nT"),email:v("nE"),localidad:v("nL"),servicio:$("nS").value,mensaje:v("nM"),origen:v("nO")||"Añadido a mano"};
+  try{const r=await Nube.api("contactos",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(c)});L.unshift(r[0]);localStorage.setItem(CACHE,JSON.stringify(L));
+    $("vNuevo").classList.remove("on");["nN","nT","nE","nL","nM","nO"].forEach(i=>$(i).value="");filtro="nuevo";pintar()}catch(e){aviso("No se ha podido guardar: sin conexión",2500)}};
+cargar();document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")cargar()});
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("/sw.js").catch(()=>{});
+</script>
+</body>
+</html>

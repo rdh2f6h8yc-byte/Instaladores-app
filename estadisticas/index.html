@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#0B1F3A">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png">
+<link rel="stylesheet" href="/base.css">
+<title>Estadísticas</title>
+<style>
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:12px}
+.kpi small{display:block;color:var(--gris);font-size:12px;font-weight:600}.kpi b{display:block;font-size:22px;margin-top:4px;letter-spacing:-.01em}.kpi span{display:block;color:var(--gris);font-size:12px;margin-top:2px}
+.graf{background:#fff;border:1px solid var(--borde);border-radius:12px;padding:12px 12px 6px;margin-bottom:10px;position:relative}
+.graf h4{margin:0 0 2px;font-size:15px}.graf p.sub{margin:0 0 8px;color:var(--gris);font-size:12.5px}
+.graf svg{display:block;width:100%;height:auto;overflow:visible}
+.graf details{margin:4px 0 6px;font-size:13px;color:var(--gris)}.graf summary{cursor:pointer;font-weight:600}
+.graf table{width:100%;border-collapse:collapse;margin-top:6px;color:var(--azul)}.graf td{padding:4px 2px;border-bottom:1px solid var(--claro)}.graf td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.tip{position:absolute;pointer-events:none;background:var(--azul);color:#fff;font-size:12.5px;padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-100%);display:none;z-index:3}
+.hb{display:grid;grid-template-columns:minmax(80px,38%) 1fr auto;gap:8px;align-items:center;font-size:13px;padding:4px 0}
+.hb .bar{height:16px;background:var(--claro);border-radius:0 4px 4px 0;position:relative}.hb .bar i{position:absolute;left:0;top:0;bottom:0;background:#1E88E5;border-radius:0 4px 4px 0;min-width:2px}
+.hb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hb b{font-variant-numeric:tabular-nums;font-size:12.5px}
+.nota{color:var(--gris);font-size:12px;line-height:1.4;margin:4px 2px 12px}
+</style>
+</head>
+<body>
+<header><a class="ib" href="/">⌂</a><div class="tit"><small>NEGOCIO <span id="nubeEst" style="color:#8FA3BC">☁︎</span></small><b>Estadísticas</b></div></header>
+<main id="main"></main>
+<script src="/config.js"></script><script src="/nube.js"></script>
+<script>
+"use strict";
+if(!Nube.requerir()||!Nube.soloAdmin())throw new Error("Solo el administrador");
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const lee=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const r2=v=>Math.round(v*100)/100;
+const eur=(v,d)=>{const s=(d===0?Math.round(v).toString():r2(v).toFixed(2));const [a,b]=s.split(".");return a.replace(/\B(?=(\d{3})+(?!\d))/g,".")+(b?","+b:"")+" €"};
+const eurC=v=>v>=10000?(Math.round(v/100)/10).toString().replace(".",",")+"k €":eur(v,0);
+const MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+let periodo="12m",persona="todos";
+// Mismo cálculo que los PDF de presupuesto
+function totalPres(pr){const part=pr.tipo!=="empresa";let base=0,tci=0;for(const x of pr.partidas||[]){const q=+x.q||0;let bu,fijo=null;if(x.iva!=null){fijo=+x.iva;bu=fijo/1.21}else bu=+x.p||0;bu=r2(bu);const bl=r2(bu*q);base+=bl;tci+=fijo!==null?r2(fijo*q):r2(bl*1.21)}
+  base=r2(base);return{base,total:part?r2(tci):r2(base+r2(base*.21))}}
+function rango(){const h=new Date();if(periodo==="ano")return[`${h.getFullYear()}-01-01`,"9999"];if(periodo==="todo")return["0000","9999"];const d=new Date(h.getFullYear(),h.getMonth()-11,1);return[d.toISOString().slice(0,7)+"-01","9999"]}
+function meses(){const h=new Date(),n=periodo==="ano"?h.getMonth()+1:12,L=[];for(let i=n-1;i>=0;i--){const d=new Date(h.getFullYear(),h.getMonth()-i,1);L.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"))}return L}
+function columnas(id,datos,fmtv,entero){// datos:[{k,l,v}] — una sola serie, columnas finas con extremo redondeado
+  const W=340,H=170,pl=40,pb=22,pt=16,max=Math.max(1,...datos.map(d=>d.v)),paso=entero?Math.max(1,Math.ceil(niceStep(max))):niceStep(max),top=Math.ceil(max/paso)*paso,bw=(W-pl)/datos.length,cw=Math.min(18,bw*.6);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(id)}">`;
+  for(let v=0;v<=top+1e-9;v+=paso){const y=pt+(H-pt-pb)*(1-v/top);s+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="#E6EBF1" stroke-width="1"/><text x="${pl-6}" y="${y+3.5}" font-size="9.5" fill="#5F6B7A" text-anchor="end">${fmtv(v,true)}</text>`}
+  const iMax=datos.reduce((a,d,i)=>d.v>datos[a].v?i:a,0);
+  datos.forEach((d,i)=>{const x=pl+bw*i+(bw-cw)/2,h=(H-pt-pb)*(d.v/top),y=H-pb-h,r=Math.min(4,h);
+    if(h>0)s+=`<path d="M${x},${H-pb} V${y+r} Q${x},${y} ${x+r},${y} H${x+cw-r} Q${x+cw},${y} ${x+cw},${y+r} V${H-pb} Z" fill="#1E88E5"/>`;
+    s+=`<rect x="${pl+bw*i}" y="${pt}" width="${bw}" height="${H-pt}" fill="transparent" data-tip="${esc(d.l)}: ${esc(fmtv(d.v))}" data-x="${pl+bw*i+bw/2}" data-y="${y}"/>`;
+    s+=`<text x="${pl+bw*i+bw/2}" y="${H-6}" font-size="9.5" fill="#5F6B7A" text-anchor="middle">${esc(d.l.split(" ")[0])}</text>`;
+    if((i===iMax||i===datos.length-1)&&d.v>0)s+=`<text x="${pl+bw*i+bw/2}" y="${y-4}" font-size="9.5" font-weight="700" fill="#0B1F3A" text-anchor="middle">${esc(fmtv(d.v,true))}</text>`});
+  return s+"</svg>"}
+function niceStep(max){const raw=max/4,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;return(n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p}
+function barras(datos,fmtv){const max=Math.max(1,...datos.map(d=>d.v));return datos.map(d=>`<div class="hb"><span title="${esc(d.l)}">${esc(d.l)}</span><div class="bar"><i style="width:${Math.max(.5,d.v/max*100)}%"></i></div><b>${esc(fmtv(d.v))}</b></div>`).join("")}
+const tabla=(datos,fmtv)=>`<details><summary>Ver tabla</summary><table>${datos.map(d=>`<tr><td>${esc(d.l)}</td><td>${esc(fmtv(d.v))}</td></tr>`).join("")}</table></details>`;
+async function pintar(){
+  // Equipo: tus datos (de este móvil) y los de cada técnico (de la nube)
+  const EQ=lee("almara-equipo-cache"),yo=Nube.yo(),hayEq=!!(EQ&&EQ.miembros&&EQ.miembros.length>1);
+  const de=uid=>uid===yo&&!Nube.verComo()?{c:(lee("almara-clientes-v1")||{}).clientes||[],p:(lee("almara-pres-v1")||{}).lista||[]}
+    :{c:(((EQ&&EQ.datos[uid])||{}).clientes||{}).clientes||[],p:(((EQ&&EQ.datos[uid])||{}).presupuestos||{}).lista||[]};
+  let cl=[],pr=[];const porMiembro=[];
+  if(hayEq){if(persona!=="todos"&&!EQ.miembros.some(m=>m.user_id===persona))persona="todos";
+    for(const m of EQ.miembros){const d=de(m.user_id);porMiembro.push({m,d});if(persona==="todos"||persona===m.user_id){cl=cl.concat(d.c);pr=pr.concat(d.p)}}}
+  else{cl=(lee("almara-clientes-v1")||{}).clientes||[];pr=(lee("almara-pres-v1")||{}).lista||[]}
+  let ct=lee("almara-contactos-cache")||[];
+  const [d0,d1]=rango(),en=f=>f&&f>=d0&&f<=d1;
+  const partes=[];for(const c of cl)for(const t of c.trabajos||[])partes.push({c,t,imp:parseFloat(String(t.importe||"").replace(",","."))||0});
+  const P=partes.filter(p=>en(p.t.fecha)),fact=P.reduce((s,p)=>s+p.imp,0),conImp=P.filter(p=>p.imp>0);
+  const PR=pr.filter(p=>en(p.fecha)),acept=PR.filter(p=>p.enlace&&p.enlace.estado==="aceptado"),env=PR.filter(p=>p.enlace),rech=PR.filter(p=>p.enlace&&p.enlace.estado==="rechazado");
+  const nuevos=cl.filter(c=>en(c.creado)),CT=ct.filter(c=>en(String(c.creado).slice(0,10))),ctCli=CT.filter(c=>c.estado==="cliente");
+  const mant=cl.filter(c=>c.mant&&c.mant.activo),cuota=mant.reduce((s,c)=>s+(parseFloat(String(c.mant.cuota||"").replace(",","."))||0),0);
+  const etq={"12m":"Últimos 12 meses","ano":"Este año","todo":"Desde el principio"}[periodo];
+  let h=`<div class="chips">${[["12m","Últimos 12 meses"],["ano","Este año"],["todo","Todo"]].map(([k,l])=>`<button data-p="${k}" class="${periodo===k?"on":""}">${l}</button>`).join("")}</div>
+  ${hayEq?`<div class="chips">${[["todos","Todo el equipo"]].concat(EQ.miembros.map(m=>[m.user_id,m.nombre+(m.rol==="baja"?" (baja)":"")])).map(([k,l])=>`<button data-per="${esc(k)}" class="${persona===k?"on":""}">${esc(l)}</button>`).join("")}</div>`:""}
+  <div class="kpis">
+    <div class="kpi"><small>Importe en partes</small><b>${eur(fact,0)}</b><span>${P.length} parte${P.length===1?"":"s"}${conImp.length?" · media "+eur(fact/conImp.length,0):""}</span></div>
+    <div class="kpi"><small>Presupuestos</small><b>${PR.length}</b><span>${eur(PR.reduce((s,p)=>s+totalPres(p).total,0),0)} presupuestado</span></div>
+    <div class="kpi"><small>Aceptados online</small><b>${acept.length}${env.length?` <span style="display:inline;font-size:14px">de ${env.length}</span>`:""}</b><span>${env.length?Math.round(acept.length/env.length*100)+" % de los enviados"+(rech.length?" · "+rech.length+" rechazados":""):"Envía presupuestos por enlace"}</span></div>
+    <div class="kpi"><small>Clientes nuevos</small><b>${nuevos.length}</b><span>${cl.length} en total</span></div>
+    <div class="kpi"><small>Contactos web</small><b>${CT.length}</b><span>${CT.length?Math.round(ctCli.length/CT.length*100)+" % pasados a cliente":"Aún no han llegado"}</span></div>
+    <div class="kpi"><small>Mantenimientos</small><b>${mant.length}</b><span>${cuota?eur(cuota)+" / mes + IVA":"Sin cuotas apuntadas"}</span></div>
+  </div>`;
+  // Por técnico
+  if(hayEq&&persona==="todos"){const T=porMiembro.map(({m,d})=>{let v=0,n=0;for(const c of d.c)for(const t of c.trabajos||[])if(en(t.fecha)){v+=parseFloat(String(t.importe||"").replace(",","."))||0;n++}return{l:m.nombre,v,n}}).sort((a,b)=>b.v-a.v);
+    h+=`<h3>Equipo</h3><div class="graf"><h4>Importe en partes por persona</h4><p class="sub">${etq}</p>${barras(T,v=>eur(v,0))}${tabla(T.map(t=>({l:t.l+" ("+t.n+" partes)",v:t.v})),v=>eur(v))}</div>`}
+  // Por mes
+  const M=meses().map(m=>({k:m,l:MES[+m.slice(5)-1]+" "+m.slice(0,4),v:partes.filter(p=>String(p.t.fecha).slice(0,7)===m).reduce((s,p)=>s+p.imp,0)}));
+  h+=`<h3>Por meses</h3><div class="graf"><h4>Importe de los partes por mes</h4><p class="sub">${periodo==="todo"?"Últimos 12 meses":etq}</p>${columnas("Importe por mes",M,(v,c)=>c?eurC(v):eur(v))}${tabla(M,v=>eur(v))}<div class="tip"></div></div>`;
+  const PM=meses().map(m=>({k:m,l:MES[+m.slice(5)-1]+" "+m.slice(0,4),v:pr.filter(p=>String(p.fecha).slice(0,7)===m).length}));
+  h+=`<div class="graf"><h4>Presupuestos hechos por mes</h4><p class="sub">Número de presupuestos</p>${columnas("Presupuestos por mes",PM,v=>String(Math.round(v)),true)}${tabla(PM,v=>String(v))}<div class="tip"></div></div>`;
+  // Por servicio
+  const cats={};for(const p of P){cats[p.t.cat]=cats[p.t.cat]||{n:0,v:0};cats[p.t.cat].n++;cats[p.t.cat].v+=p.imp}
+  const CS=Object.entries(cats).map(([l,o])=>({l,v:o.v,n:o.n})).sort((a,b)=>b.v-a.v||b.n-a.n);
+  h+=`<h3>Qué vendes</h3><div class="graf"><h4>Importe por servicio</h4><p class="sub">${etq}</p>${CS.length?barras(CS,v=>eur(v,0)):`<p class="nota">Aún no hay partes con importe en este periodo.</p>`}${CS.length?tabla(CS.map(c=>({l:c.l+" ("+c.n+" partes)",v:c.v})),v=>eur(v)):""}</div>`;
+  const tipos={};for(const p of P)tipos[p.t.clase]=(tipos[p.t.clase]||0)+1;const TP=Object.entries(tipos).map(([l,v])=>({l,v})).sort((a,b)=>b.v-a.v);
+  if(TP.length)h+=`<div class="graf"><h4>Tipo de trabajo</h4><p class="sub">Número de partes</p>${barras(TP,v=>String(v))}</div>`;
+  // Dónde
+  const pobl={};for(const c of cl){const k=(c.localidad||"Sin población").trim();pobl[k]=(pobl[k]||0)+1}
+  let PB=Object.entries(pobl).map(([l,v])=>({l,v})).sort((a,b)=>b.v-a.v);if(PB.length>8){const o=PB.slice(7).reduce((s,x)=>s+x.v,0);PB=PB.slice(0,7).concat([{l:"Otras",v:o}])}
+  h+=`<h3>Dónde trabajas</h3><div class="graf"><h4>Clientes por población</h4><p class="sub">Todos los clientes</p>${PB.length?barras(PB,v=>String(v)):`<p class="nota">Todavía no hay clientes.</p>`}</div>`;
+  // Contactos web
+  if(ct.length){const CM=meses().map(m=>({l:MES[+m.slice(5)-1]+" "+m.slice(0,4),v:ct.filter(c=>String(c.creado).slice(0,7)===m).length}));
+    h+=`<h3>Web</h3><div class="graf"><h4>Contactos de la web por mes</h4><p class="sub">Formularios recibidos</p>${columnas("Contactos web por mes",CM,v=>String(Math.round(v)),true)}${tabla(CM,v=>String(v))}<div class="tip"></div></div>`}
+  // Mejores clientes
+  const porCli={};for(const p of P)porCli[p.c.nombre]=(porCli[p.c.nombre]||0)+p.imp;const TC=Object.entries(porCli).map(([l,v])=>({l,v})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,6);
+  if(TC.length)h+=`<h3>Mejores clientes</h3><div class="graf"><h4>Por importe en partes</h4><p class="sub">${etq}</p>${barras(TC,v=>eur(v,0))}</div>`;
+  h+=`<p class="nota">Las cifras salen del importe que apuntas en cada parte de trabajo y de los presupuestos guardados. Para que sean fiables, pon el importe en todos los partes.</p>`;
+  $("main").innerHTML=h}
+$("main").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(b){periodo=b.dataset.p;pintar()}const q=e.target.closest("[data-per]");if(q){persona=q.dataset.per;pintar()}});
+// Tooltip al tocar o pasar por una columna
+function tip(e){const r=e.target.closest("[data-tip]"),g=e.target.closest(".graf");document.querySelectorAll(".tip").forEach(t=>{if(!g||t.parentNode!==g)t.style.display="none"});if(!r||!g)return;
+  const t=g.querySelector(".tip"),svg=g.querySelector("svg"),sc=svg.getBoundingClientRect().width/340,gr=g.getBoundingClientRect(),sr=svg.getBoundingClientRect();
+  t.textContent=r.dataset.tip;t.style.left=(sr.left-gr.left+(+r.dataset.x)*sc)+"px";t.style.top=(sr.top-gr.top+(+r.dataset.y)*sc-6)+"px";t.style.display="block"}
+$("main").addEventListener("pointermove",tip);$("main").addEventListener("click",tip);
+pintar();
+async function cargarEquipo(){try{const miembros=await Nube.equipo();if(miembros.length<2){localStorage.removeItem("almara-equipo-cache");return}
+  const datos=await Nube.datosEquipo(["clientes","presupuestos"]);localStorage.setItem("almara-equipo-cache",JSON.stringify({miembros,datos}));pintar()}catch(e){}}
+if(Nube.sesion()&&Nube.configurado())cargarEquipo();
+Nube.sincronizar(["clientes","presupuestos"]).then(async ch=>{if(Nube.sesion()&&Nube.configurado()){try{const c=await Nube.api("contactos?select=*&order=creado.desc&limit=500");localStorage.setItem("almara-contactos-cache",JSON.stringify(c));ch.push("c")}catch(e){}}if(ch.length)pintar()});
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("/sw.js").catch(()=>{});
+</script>
+</body>
+</html>
