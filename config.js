@@ -10,7 +10,7 @@ window.ALMARA_CONFIG = {
   precioMensual: "19 € al mes",
   precioAnual: "190 € al año (2 meses gratis)",
   pagoMensual: "https://buy.stripe.com/cNi3co02F0cN4EcaDc1wY00",  // enlace de pago de Stripe (Payment Link) de la suscripción mensual
-  pagoAnual: "",    // enlace de pago de Stripe de la suscripción anual
+  pagoAnual: "https://buy.stripe.com/28E7sEcPrf7HgmU5iS1wY01",    // enlace de pago de Stripe de la suscripción anual
   portal: "",   // enlace del portal de cliente de Stripe (cambiar tarjeta, facturas, cancelar)
   supabaseUrl: "https://arhczbzfrukzugwxmfri.supabase.co",
   supabaseAnonKey: "sb_publishable_mfH8pMp6z9zSlCBySj6XIw_ZyluI17O",
