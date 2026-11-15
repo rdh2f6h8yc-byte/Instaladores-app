@@ -364,6 +364,24 @@ begin
   return 'ok';
 end $$;
 
+-- Eliminar la cuenta para siempre. El administrador elimina además la empresa entera
+-- (datos de todo el equipo, contactos e invitaciones). Un técnico no puede: lo da de baja su administrador.
+create or replace function public.eliminar_cuenta() returns text
+language plpgsql security definer set search_path = public as $$
+declare q public.equipo;
+begin
+  if auth.uid() is null then raise exception 'Sin sesión'; end if;
+  select * into q from public.equipo where user_id = auth.uid();
+  if found then
+    if q.rol <> 'admin' then return 'solo_admin'; end if;
+    delete from public.datos where user_id in (select user_id from public.equipo where empresa_id = q.empresa_id);
+    delete from public.presupuestos_publicos where user_id in (select user_id from public.equipo where empresa_id = q.empresa_id);
+    delete from public.empresas where id = q.empresa_id;
+  end if;
+  delete from auth.users where id = auth.uid();
+  return 'ok';
+end $$;
+
 -- =====================================================================
 -- 9) PERMISOS
 -- =====================================================================
@@ -379,6 +397,9 @@ revoke all on function public.quitar_invitacion(text) from public, anon;
 revoke all on function public.cambiar_estado_tecnico(uuid, boolean) from public, anon;
 grant execute on function public.mi_perfil(), public.crear_empresa(text, text), public.guardar_tecnico(text, text, text),
   public.quitar_invitacion(text), public.cambiar_estado_tecnico(uuid, boolean) to authenticated;
+
+revoke all on function public.eliminar_cuenta() from public, anon;
+grant execute on function public.eliminar_cuenta() to authenticated;
 
 revoke all on function public.ver_presupuesto(uuid) from public;
 revoke all on function public.responder_presupuesto(uuid, boolean, text, text, text, text) from public;

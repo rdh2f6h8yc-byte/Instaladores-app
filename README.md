@@ -26,7 +26,14 @@ Cada empresa se da de alta sola, tiene sus propios datos y su propio equipo de t
   update public.empresas set pagado_hasta = now() + interval '1 year' where nombre = 'Nombre de la empresa';
   ```
 
+## Cuenta y suscripción
+
+- **Cuenta y suscripción** (en la portada): estado del plan, botón para suscribirse y eliminar la cuenta.
+- En `config.js`: `precio` (texto), `pago` (enlace de pago de Stripe) y `portal` (portal de cliente de Stripe para cancelar).
+  Mientras estén vacíos, la app pide escribir a `soporte`.
+- **Eliminar la cuenta**: el administrador borra su cuenta y la empresa entera. A un técnico lo da de baja su administrador.
+
 ## Pendiente
 
-- Cobro automático de la suscripción.
+- Activación automática al pagar (ahora se activa a mano con el `update` de arriba).
 - Avisos al móvil (desactivados con `avisos: false` en `config.js`).

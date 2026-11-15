@@ -91,6 +91,7 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
     <button class="entrar" id="bAlta" type="submit">Crear mi empresa</button>
     <div class="error" id="errorAlta"></div>
     <p style="color:#9FB4CF;font-size:13px;line-height:1.45;margin:14px 0 0">¿Trabajas para una empresa que ya usa la app? Pídele a tu jefe que te añada con este mismo correo desde <b>Equipo</b> y vuelve a entrar.</p>
+    <button type="button" id="bBorrarAlta" style="display:block;width:100%;margin-top:2px;background:none;color:#9FB4CF;font-size:13px;font-weight:600;padding:8px;text-decoration:underline">Eliminar mi cuenta</button>
     <button type="button" id="bSalirAlta" style="display:block;width:100%;margin-top:8px;background:none;color:#CFE0F5;font-size:14px;font-weight:700;padding:10px">Cerrar sesión</button>
   </form>
   <div class="pie">La app de las empresas instaladoras</div>
@@ -117,12 +118,14 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
     <button class="avisosBtn" id="bAvisos"><span class="ic">🔔</span><span><b>Avisos al móvil</b><small id="avEstado">Te avisa al llegar un contacto o cuando aceptan un presupuesto</small></span></button>
     <button class="avisosBtn" id="bForm" hidden><span class="ic">🔗</span><span><b>Formulario de contacto</b><small>Enlace para tu web, WhatsApp o redes</small></span></button>
     <button class="avisosBtn" id="bEquipo" hidden><span class="ic">👷</span><span><b>Equipo</b><small id="eqEstado">Añade a un compañero y mira lo que hace</small></span></button>
+    <button class="avisosBtn" id="bCuenta"><span class="ic">⚙️</span><span><b>Cuenta y suscripción</b><small id="ctEstado">Tu plan, pagos y eliminar la cuenta</small></span></button>
     <button class="salir" id="bSalir">Cerrar sesión</button>
   </main>
 </section>
 
 <div class="velo" id="vEquipo"><div class="hoja"><h2>👷 Equipo <button data-cerrar>×</button></h2><div id="eqCuerpo"></div></div></div>
 <div class="velo" id="vForm"><div class="hoja"><h2>🔗 Formulario de contacto <button data-cerrar>×</button></h2><div id="fmCuerpo"></div></div></div>
+<div class="velo" id="vCuenta"><div class="hoja"><h2>⚙️ Cuenta y suscripción <button data-cerrar>×</button></h2><div id="ctCuerpo"></div></div></div>
 <div class="velo" id="vAvisos"><div class="hoja"><h2>🔔 Avisos al móvil <button data-cerrar>×</button></h2><div id="avCuerpo"></div></div></div>
 <script src="/config.js"></script>
 <script src="/nube.js"></script>
@@ -203,6 +206,40 @@ $("fAlta").onsubmit=async e=>{e.preventDefault();const b=$("bAlta"),er=$("errorA
 const cerrar=()=>{Nube.salir();localStorage.removeItem(LOCAL);localStorage.removeItem("almara-perfil");location.replace("/")};
 $("bSalirAlta").onclick=cerrar;
 $("bSalir").onclick=cerrar;
+// ---------- Cuenta, suscripción y eliminar la cuenta ----------
+const fechaL=t=>t?new Date(t).toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"}):"";
+function enlacePago(u,pf,ses){try{const x=new URL(u);if(pf.empresa_id)x.searchParams.set("client_reference_id",pf.empresa_id);if(ses&&ses.user&&ses.user.email)x.searchParams.set("prefilled_email",ses.user.email);return x.href}catch(e){return""}}
+function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nube.esAdmin(),ahora=Date.now();
+  const pagada=pf.pagado_hasta&&Date.parse(pf.pagado_hasta)>ahora,enPrueba=!pagada&&pf.prueba_hasta&&Date.parse(pf.prueba_hasta)>ahora;
+  const plan=pagada?`<div class="estadoAv" style="background:#E3F4EA"><b>Suscripción activa</b> hasta el ${fechaL(pf.pagado_hasta)}.</div>`
+    :enPrueba?`<div class="estadoAv" style="background:#FFF8EC"><b>Periodo de prueba</b> hasta el ${fechaL(pf.prueba_hasta)}. Después podrás ver tus datos, pero no guardar cambios hasta suscribirte.</div>`
+    :`<div class="estadoAv" style="background:#FDECEC"><b>Sin suscripción activa.</b> Puedes ver tus datos, pero no se guardan cambios nuevos.</div>`;
+  const pago=CFG.pago?enlacePago(CFG.pago,pf,ses):"",portal=CFG.portal?enlacePago(CFG.portal,{},ses):"";
+  let sus="";
+  if(!adm)sus=`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:10px 0 0">La suscripción la lleva el administrador de tu empresa.</p>`;
+  else{
+    if(!pagada)sus+=pago?`<a class="bt az" href="${esc(pago)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px">Suscribirme${CFG.precio?" · "+esc(CFG.precio):""}</a><small style="color:var(--gris);display:block;margin-top:6px">El pago se hace en una página segura de Stripe. Activamos tu suscripción en cuanto recibimos el pago.</small>`
+      :`<p style="font-size:14.5px;line-height:1.45;margin:10px 0 0">Para suscribirte${CFG.precio?" ("+esc(CFG.precio)+")":""}, escríbenos${CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":""} y te la activamos.</p>`;
+    if(pagada)sus+=portal?`<a class="bt" href="${esc(portal)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px">Cambiar tarjeta, ver facturas o cancelar</a><small style="color:var(--gris);display:block;margin-top:6px">Si cancelas, sigues teniendo acceso hasta el ${fechaL(pf.pagado_hasta)} y no se te cobra más.</small>`
+      :`<p style="font-size:14.5px;line-height:1.45;margin:10px 0 0">Para cancelar la suscripción o cambiar la forma de pago, escríbenos${CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":""}. Si cancelas, mantienes el acceso hasta el ${fechaL(pf.pagado_hasta)}.</p>`;
+  }
+  const borrar=adm?`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:0 0 8px">Se borra <b>para siempre</b> tu cuenta y la empresa <b>${esc(pf.empresa||"")}</b> entera: clientes, planos, presupuestos, partes, fotos y contactos, también los de tus técnicos. No se puede deshacer${pagada?", y antes conviene cancelar la suscripción para que no se te siga cobrando":""}.</p>
+      <input id="ctConf" autocomplete="off" autocapitalize="characters" placeholder="Escribe ELIMINAR para confirmar" style="display:block;width:100%;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px">
+      <button class="bt" id="ctBorrar" style="margin-top:8px;color:#B3261E;border-color:#E9B8B4">Eliminar la cuenta y la empresa</button><div id="ctRes" style="font-size:13.5px;margin-top:6px;color:#B3261E"></div>`
+    :`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:0">Tu cuenta pertenece a la empresa <b>${esc(pf.empresa||"")}</b>. Para darte de baja, pídeselo a tu administrador: lo hace desde <b>Equipo</b> y los trabajos que has registrado se quedan en la empresa.</p>`;
+  $("ctCuerpo").innerHTML=`<div class="canal">${esc(ses.user?ses.user.email:"")}${pf.empresa?" · "+esc(pf.empresa):""}${adm?" · administrador":" · técnico"}</div>
+    <h3 style="margin:18px 0 6px">Suscripción</h3>${plan}${sus}
+    <h3 style="margin:26px 0 6px">Eliminar la cuenta</h3>${borrar}`;
+  if($("ctBorrar"))$("ctBorrar").onclick=async()=>{const res=$("ctRes");if($("ctConf").value.trim().toUpperCase()!=="ELIMINAR"){res.textContent="Escribe ELIMINAR en la casilla para confirmar.";return}
+    if(!navigator.onLine){res.textContent="Necesitas conexión para eliminar la cuenta.";return}
+    $("ctBorrar").disabled=true;$("ctBorrar").textContent="Eliminando…";
+    try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}res.textContent=r==="solo_admin"?"Solo el administrador puede eliminar la empresa.":"No se ha podido eliminar: "+r}
+    catch(e){res.textContent="No se ha podido eliminar: "+e.message}
+    $("ctBorrar").disabled=false;$("ctBorrar").textContent="Eliminar la cuenta y la empresa"}}
+$("bCuenta").onclick=()=>{pintarCuenta();$("vCuenta").classList.add("on");Nube.cargarPerfil().then(pintarCuenta).catch(()=>{})};
+$("vCuenta").addEventListener("click",e=>{if(e.target===$("vCuenta")||e.target.closest("[data-cerrar]"))$("vCuenta").classList.remove("on")});
+$("bBorrarAlta").onclick=async()=>{if(!confirm("¿Eliminar tu cuenta para siempre? No se puede deshacer."))return;
+  try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}$("errorAlta").textContent="No se ha podido eliminar: "+r}catch(e){$("errorAlta").textContent="No se ha podido eliminar: "+e.message}};
 // ---------- Formulario público de contacto (solo administrador) ----------
 $("bForm").onclick=()=>{const pf=Nube.perfil()||{},url=location.origin+"/c/?e="+encodeURIComponent(pf.empresa_id||"");
   $("fmCuerpo").innerHTML=`<p style="margin:0 0 6px;color:var(--gris);font-size:14px;line-height:1.45">Este es el formulario de contacto de <b>${esc(pf.empresa||"tu empresa")}</b>. Lo que escriban tus clientes te llega a <b>Contactos web</b>. Ponlo en tu web, en tu perfil de Instagram o envíalo por WhatsApp.</p>

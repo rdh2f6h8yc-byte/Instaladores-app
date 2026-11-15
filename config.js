@@ -5,6 +5,10 @@ window.ALMARA_CONFIG = {
   producto: "Borna",
   // Correo o teléfono al que te escriben las empresas para activar la suscripción
   soporte: "",
+  // Suscripción (Stripe). Mientras estén vacíos, la app pide escribir a «soporte».
+  precio: "",   // texto que ve el cliente, por ejemplo "19 € al mes"
+  pago: "",     // enlace de pago de Stripe (Payment Link) de la suscripción
+  portal: "",   // enlace del portal de cliente de Stripe (cambiar tarjeta, facturas, cancelar)
   supabaseUrl: "https://arhczbzfrukzugwxmfri.supabase.co",
   supabaseAnonKey: "sb_publishable_mfH8pMp6z9zSlCBySj6XIw_ZyluI17O",
   // Avisos al móvil: desactivados hasta montar el envío en el proyecto nuevo

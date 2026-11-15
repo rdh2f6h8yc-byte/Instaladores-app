@@ -119,6 +119,32 @@ window.Nube = (() => {
   const cab = async extra => ({ apikey: KEY, Authorization: "Bearer " + await token(), ...extra });
   // Lista del equipo (solo administrador)
   async function equipo() { return api("equipo?select=user_id,email,nombre,rol,serie&order=creado"); }
+  // Elimina la cuenta para siempre. Si es el administrador, también la empresa entera con todos sus datos.
+  async function eliminarCuenta() {
+    const p0 = perfil(); if (p0 && (p0.rol === "tecnico" || p0.rol === "baja")) return "solo_admin";
+    const yo = sesion().user.id, carpetas = [yo];
+    if (esAdmin()) { try { (await equipo()).forEach(m => { if (!carpetas.includes(m.user_id)) carpetas.push(m.user_id); }); } catch (e) {} }
+    // Las fotos se borran antes: una vez eliminada la cuenta ya no hay permiso para hacerlo
+    for (const c of carpetas) {
+      try {
+        for (let i = 0; i < 30; i++) {
+          const r = await pedir("/storage/v1/object/list/fotos", { method: "POST", headers: await cab({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ prefix: c, limit: 1000 }) });
+          const L = r.ok ? (await r.json()).filter(o => o && o.name) : [];
+          if (!L.length) break;
+          await pedir("/storage/v1/object/fotos", { method: "DELETE", headers: await cab({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ prefixes: L.map(o => c + "/" + o.name) }) });
+          if (L.length < 1000) break;
+        }
+      } catch (e) {}
+    }
+    const r = await api("rpc/eliminar_cuenta", { method: "POST", body: "{}" });
+    if (r !== "ok") return r;
+    const ks = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith("almara-")) ks.push(k); }
+    ks.forEach(k => localStorage.removeItem(k));
+    try { sessionStorage.clear(); } catch (e) {}
+    return "ok";
+  }
   // Compañeros invitados que aún no se han registrado
   async function invitaciones() { return api("invitaciones?select=email,nombre,serie&order=creado"); }
   // Datos de todos (solo administrador): {user_id: {clave: valor}}
@@ -269,7 +295,7 @@ window.Nube = (() => {
     if (!r.ok) throw new Error("HTTP " + r.status);
     return r.json();
   }
-  return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, crearEmpresa, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
+  return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, crearEmpresa, eliminarCuenta, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
     api, rpcPublica, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
     clientes, estado: () => est, CLAVES };
 })();
