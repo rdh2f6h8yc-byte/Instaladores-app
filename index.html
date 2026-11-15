@@ -37,12 +37,12 @@ form input:focus{outline:none;border-color:#1E88E5;background:rgba(255,255,255,.
 .pie{text-align:center;color:#6F86A6;font-size:12px;margin-top:30px}
 /* Inicio */
 #inicio{display:none;padding-bottom:calc(var(--sb) + 30px)}
-header{background:var(--azul);color:#fff;padding:calc(var(--st) + 14px) 18px 22px}
+header{background:var(--azul);color:#fff;padding:calc(var(--st) + 14px) 18px 30px}
 header .fila{display:flex;align-items:center;gap:10px}
 header small{display:block;color:#9FB4CF;font-size:12px;letter-spacing:.08em}
 header h2{margin:2px 0 0;font-size:24px}
 header .nube{margin-left:auto;font-size:13px;color:#9FB4CF;text-align:right}
-main{max-width:680px;margin:-12px auto 0;padding:0 14px}
+main{max-width:680px;margin:-16px auto 0;padding:0 14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tile{background:#fff;border:1px solid var(--borde);border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:8px;min-height:116px;box-shadow:0 2px 8px rgba(11,31,58,.05)}
 .tile .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:20px}
@@ -53,8 +53,36 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
 .alerta a{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid #F5E3C6;font-size:14px}
 .alerta a:first-child{border-top:0}
 .salir{display:block;margin:26px auto 0;background:none;color:var(--gris);font-weight:700;font-size:14px;padding:10px}
-.avisosBtn{display:flex;align-items:center;gap:12px;width:100%;margin-top:18px;background:#fff;border:1px solid var(--borde);border-radius:16px;padding:14px;text-align:left;color:var(--azul)}
-.avisosBtn .ic{font-size:22px}.avisosBtn b{display:block;font-size:15px}.avisosBtn small{color:var(--gris);font-size:12.5px}
+/* Menú de inicio: acciones rápidas, buscador y listas */
+.rapidas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:#fff;border:1px solid var(--borde);border-radius:18px;padding:12px 8px;box-shadow:0 4px 14px rgba(11,31,58,.08)}
+.rapidas a{display:flex;flex-direction:column;align-items:center;gap:7px;padding:4px 2px;border-radius:12px;font-size:12.5px;font-weight:700;text-align:center;line-height:1.15;transition:transform .12s}
+.rapidas .mas{position:relative;width:52px;height:52px;border-radius:16px;background:var(--azul);color:#fff;display:grid;place-items:center;font-size:23px}
+.rapidas .mas i{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;background:#FFD400;color:var(--azul);font-style:normal;font-weight:900;font-size:16px;line-height:22px;text-align:center;border:2px solid #fff;box-sizing:content-box}
+.rapidas a:active{transform:scale(.93)}
+.busca{position:relative;margin-top:14px}
+.busca input{display:block;width:100%;padding:13px 14px 13px 42px;border:1px solid var(--borde);border-radius:14px;background:#fff;font:inherit;font-size:16px;color:var(--azul);-webkit-appearance:none;appearance:none}
+.busca input:focus{outline:none;border-color:var(--acento);box-shadow:0 0 0 3px rgba(30,136,229,.15)}
+.busca::before{content:"";position:absolute;left:15px;top:50%;width:14px;height:14px;margin-top:-9px;border:2.5px solid var(--gris);border-radius:50%;box-sizing:border-box}
+.busca::after{content:"";position:absolute;left:27px;top:50%;width:7px;height:2.5px;margin-top:4px;background:var(--gris);border-radius:2px;transform:rotate(45deg)}
+.lista{background:#fff;border:1px solid var(--borde);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(11,31,58,.05)}
+.lista>a,.lista>button{display:flex;align-items:center;gap:12px;width:100%;min-height:62px;padding:10px 12px;background:none;border:0;border-top:1px solid var(--claro);text-align:left;color:var(--azul);transition:background .12s}
+.lista>:first-child{border-top:0}
+.lista>a:active,.lista>button:active{background:var(--claro)}
+.lista .ic{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;background:var(--claro)}
+.lista .tx{flex:1;min-width:0}
+.lista b{display:block;font-size:15.5px}
+.lista small{display:block;color:var(--gris);font-size:12.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lista .bd{flex:none;min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--rojo);color:#fff;font-size:12.5px;font-weight:800;line-height:24px;text-align:center}
+.lista .bd.nar{background:var(--nar)}
+.lista .fl{flex:none;width:9px;height:9px;border-right:2.5px solid #A9B5C4;border-top:2.5px solid #A9B5C4;transform:rotate(45deg);margin-right:6px}
+.lista .vacio{padding:14px;color:var(--gris);font-size:14px}
+.pasos{background:#fff;border:1px solid var(--borde);border-radius:16px;padding:14px;margin-top:14px;box-shadow:0 2px 8px rgba(11,31,58,.05)}
+.pasos h4{margin:0 0 2px;font-size:16px;display:flex;align-items:center}.pasos h4 button{margin-left:auto;background:none;color:var(--gris);font-size:20px;width:32px;height:32px}
+.pasos p{margin:0 0 8px;color:var(--gris);font-size:13.5px}
+.pasos a,.pasos .ps{display:flex;align-items:center;gap:10px;width:100%;padding:10px 0;border-top:1px solid var(--claro);font-size:15px;font-weight:600;background:none;text-align:left;color:var(--azul)}
+.pasos .ck{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid #A9B5C4;display:grid;place-items:center;font-size:14px;color:#fff}
+.pasos .hecho{color:var(--gris);text-decoration:line-through}.pasos .hecho .ck{background:#2E9D5B;border-color:#2E9D5B}
+@media (prefers-reduced-motion:reduce){.rapidas a,.lista>a,.lista>button{transition:none}}
 .velo{position:fixed;inset:0;background:rgba(11,31,58,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}.velo.on{display:flex}
 .hoja{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(var(--sb) + 20px)}
 .hoja h2{margin:0 0 6px;font-size:19px;display:flex;align-items:center}.hoja h2 button{margin-left:auto;background:none;font-size:22px;width:36px;height:36px}
@@ -100,25 +128,34 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
 <section id="inicio">
   <header><div class="fila"><div><small id="empNom"></small><h2 id="saludo">Hola</h2></div><div class="nube" id="nubeTxt"></div></div></header>
   <main>
-    <div class="grid" style="margin-top:0">
-      <a class="tile" href="/clientes/"><span class="ic" style="background:#E3F0FC">👥</span><b>Clientes</b><small id="nCli">Fichas, accesos y mantenimientos</small></a>
-      <a class="tile nuevo" href="/clientes/?nuevo=1"><span class="ic" style="background:rgba(255,255,255,.14)">＋</span><b>Nuevo cliente</b><small>Crear ficha</small></a>
-      <a class="tile" href="/planos/"><span class="ic" style="background:#FFF1E3">📐</span><b>Planos</b><small id="nPla">Planos eléctricos</small></a>
-      <a class="tile nuevo" href="/planos/?nuevo=plano"><span class="ic" style="background:rgba(255,255,255,.14)">＋</span><b>Nuevo plano</b><small>Desde cero o con foto</small></a>
-      <a class="tile" href="/planos/?modo=pres"><span class="ic" style="background:#E3F4EA">€</span><b>Presupuestos</b><small id="nPre">Con tus tarifas y firma</small></a>
-      <a class="tile nuevo" href="/planos/?nuevo=pres"><span class="ic" style="background:rgba(255,255,255,.14)">＋</span><b>Nuevo presupuesto</b><small>En PDF para enviar</small></a>
-      <a class="tile" href="/clientes/?vista=partes"><span class="ic" style="background:#F1E8F8">📝</span><b>Partes de trabajo</b><small id="nPar">Con firma del cliente</small></a>
-      <a class="tile nuevo" href="/clientes/?parte=nuevo"><span class="ic" style="background:rgba(255,255,255,.14)">＋</span><b>Nuevo parte</b><small>Al terminar un trabajo</small></a>
-      <a class="tile" id="tCon" href="/contactos/"><span class="ic" style="background:#E3F0FC">📨</span><b>Contactos web</b><small id="nCon">Peticiones de la web</small></a>
-      <a class="tile" id="tEst" href="/estadisticas/"><span class="ic" style="background:#E3F4EA">📊</span><b>Estadísticas</b><small>Cómo va el negocio</small></a>
-      <a class="tile" href="/material/"><span class="ic" style="background:#FFF1E3">📦</span><b>Material</b><small id="nMat">Furgoneta e inventario</small></a>
-    </div>
+    <nav class="rapidas" aria-label="Crear nuevo">
+      <a href="/clientes/?nuevo=1"><span class="mas" aria-hidden="true">👤<i>+</i></span>Cliente</a>
+      <a href="/planos/?nuevo=pres"><span class="mas" aria-hidden="true">€<i>+</i></span>Presupuesto</a>
+      <a href="/clientes/?parte=nuevo"><span class="mas" aria-hidden="true">📝<i>+</i></span>Parte</a>
+      <a href="/planos/?nuevo=plano"><span class="mas" aria-hidden="true">📐<i>+</i></span>Plano</a>
+    </nav>
+    <div class="busca" id="cajaBusca" hidden><input id="buscaIni" type="search" enterkeyhint="search" autocomplete="off" placeholder="Buscar cliente, teléfono o pueblo…" aria-label="Buscar cliente"></div>
+    <div class="lista" id="resBusca" hidden style="margin-top:8px"></div>
+    <div id="primeros"></div>
     <div id="avisoPlan"></div>
     <div id="avisos"></div>
-    <button class="avisosBtn" id="bAvisos"><span class="ic">🔔</span><span><b>Avisos al móvil</b><small id="avEstado">Te avisa al llegar un contacto o cuando aceptan un presupuesto</small></span></button>
-    <button class="avisosBtn" id="bForm" hidden><span class="ic">🔗</span><span><b>Formulario de contacto</b><small>Enlace para tu web, WhatsApp o redes</small></span></button>
-    <button class="avisosBtn" id="bEquipo" hidden><span class="ic">👷</span><span><b>Equipo</b><small id="eqEstado">Añade a un compañero y mira lo que hace</small></span></button>
-    <button class="avisosBtn" id="bCuenta"><span class="ic">⚙️</span><span><b>Cuenta y suscripción</b><small id="ctEstado">Tu plan, pagos y eliminar la cuenta</small></span></button>
+    <h3>Tu trabajo</h3>
+    <div class="lista">
+      <a href="/clientes/"><span class="ic" style="background:#E3F0FC">👥</span><span class="tx"><b>Clientes</b><small id="nCli">Fichas, accesos y mantenimientos</small></span><span class="fl"></span></a>
+      <a href="/planos/?modo=pres"><span class="ic" style="background:#E3F4EA">€</span><span class="tx"><b>Presupuestos</b><small id="nPre">Con tus tarifas y firma</small></span><span class="fl"></span></a>
+      <a href="/clientes/?vista=partes"><span class="ic" style="background:#F1E8F8">📝</span><span class="tx"><b>Partes de trabajo</b><small id="nPar">Con firma del cliente</small></span><span class="bd nar" id="bdPar" hidden></span><span class="fl"></span></a>
+      <a href="/planos/"><span class="ic" style="background:#FFF1E3">📐</span><span class="tx"><b>Planos</b><small id="nPla">Planos eléctricos</small></span><span class="fl"></span></a>
+      <a href="/material/"><span class="ic" style="background:#FFF1E3">📦</span><span class="tx"><b>Material</b><small id="nMat">Furgoneta e inventario</small></span><span class="bd" id="bdMat" hidden></span><span class="fl"></span></a>
+      <a id="tCon" href="/contactos/"><span class="ic" style="background:#E3F0FC">📨</span><span class="tx"><b>Contactos web</b><small id="nCon">Peticiones de la web</small></span><span class="bd" id="bdCon" hidden></span><span class="fl"></span></a>
+      <a id="tEst" href="/estadisticas/"><span class="ic" style="background:#E3F4EA">📊</span><span class="tx"><b>Estadísticas</b><small>Cómo va el negocio</small></span><span class="fl"></span></a>
+    </div>
+    <h3>Tu empresa</h3>
+    <div class="lista">
+      <button id="bEquipo" hidden><span class="ic">👷</span><span class="tx"><b>Equipo</b><small id="eqEstado">Añade a un compañero y mira lo que hace</small></span><span class="fl"></span></button>
+      <button id="bForm" hidden><span class="ic">🔗</span><span class="tx"><b>Formulario de contacto</b><small>Enlace para tu web, WhatsApp o redes</small></span><span class="fl"></span></button>
+      <button id="bAvisos"><span class="ic">🔔</span><span class="tx"><b>Avisos al móvil</b><small id="avEstado">Te avisa al llegar un contacto o cuando aceptan un presupuesto</small></span><span class="fl"></span></button>
+      <button id="bCuenta"><span class="ic">⚙️</span><span class="tx"><b>Cuenta y suscripción</b><small id="ctEstado">Tu plan, pagos y eliminar la cuenta</small></span><span class="fl"></span></button>
+    </div>
     <button class="salir" id="bSalir">Cerrar sesión</button>
   </main>
 </section>
@@ -159,6 +196,21 @@ function mostrar(){
   Nube.cargarPerfil().catch(()=>{}).then(()=>{if(Nube.configurado()&&sinAcceso())throw 0;pintarInicio();return Nube.sincronizar()}).then(async()=>{try{if(Nube.sesion()&&Nube.esAdmin()){const c=await Nube.api("contactos?select=*&order=creado.desc&limit=500");localStorage.setItem("almara-contactos-cache",JSON.stringify(c))}}catch(e){}pintarInicio();estadoNube()}).catch(()=>{});
 }
 function estadoNube(){const e=Nube.estado();$("nubeTxt").innerHTML=Nube.configurado()?`<span style="color:${e.c||"#9FB4CF"}">☁︎</span> ${esc(e.t||"Conectando…")}<br><small>${esc((Nube.sesion()||{user:{}}).user.email||"")}</small>`:"Solo en este móvil"}
+let CLI_INI=[];
+// Primeros pasos: guía corta para una empresa recién creada; desaparece al completarla o al cerrarla
+function pintarPrimeros(nCli,nPre,adm){const c=$("primeros"),form=adm&&Nube.configurado()&&(Nube.perfil()||{}).empresa_id;
+  const pasos=[[nCli>0,"Crea tu primer cliente","/clientes/?nuevo=1"],[nPre>0,"Haz tu primer presupuesto","/planos/?nuevo=pres"]];
+  if(form)pasos.push([localStorage.getItem("almara-vio-form")==="1","Comparte tu formulario de contacto","#form"]);
+  if(Nube.verComo()||localStorage.getItem("almara-primeros")==="no"||pasos.every(p=>p[0])){c.innerHTML="";return}
+  c.innerHTML=`<div class="pasos"><h4>Primeros pasos <button id="ppCerrar" aria-label="Ocultar primeros pasos">×</button></h4><p>${pasos.filter(p=>p[0]).length} de ${pasos.length} hechos</p>${pasos.map(([ok,t,u])=>u==="#form"?`<button class="ps${ok?" hecho":""}" id="ppForm"><span class="ck">${ok?"✓":""}</span>${t}</button>`:`<a class="${ok?"hecho":""}" href="${u}"><span class="ck">${ok?"✓":""}</span>${t}</a>`).join("")}</div>`;
+  $("ppCerrar").onclick=()=>{localStorage.setItem("almara-primeros","no");c.innerHTML=""};
+  if($("ppForm"))$("ppForm").onclick=()=>$("bForm").click()}
+// Buscador de clientes en la portada (sobre los datos que ya están en el móvil)
+function buscarIni(){const q=$("buscaIni").value.trim().toLowerCase(),r=$("resBusca");if(!q){r.hidden=true;r.innerHTML="";return}
+  const sin=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""),qq=sin(q);
+  const L=CLI_INI.filter(c=>sin([c.nombre,c.contacto,c.tel,c.email,c.localidad,c.dir,c.nif].join(" ")).includes(qq)).slice(0,6);
+  r.hidden=false;r.innerHTML=L.length?L.map(c=>`<a href="/clientes/?id=${encodeURIComponent(c.id)}"><span class="ic" style="background:#E3F0FC">👤</span><span class="tx"><b>${esc(c.nombre||"Sin nombre")}</b><small>${esc([c.localidad,c.tel].filter(Boolean).join(" · ")||"Ver ficha")}</small></span><span class="fl"></span></a>`).join("")
+    :`<div class="vacio">Ningún cliente con «${esc($("buscaIni").value.trim())}».</div><a href="/clientes/?nuevo=1"><span class="ic" style="background:var(--azul);color:#fff">＋</span><span class="tx"><b>Crear cliente nuevo</b></span><span class="fl"></span></a>`}
 function pintarInicio(){
   const h=new Date().getHours(),pf=Nube.perfil()||{},adm=Nube.esAdmin(),vc=Nube.verComo();
   $("saludo").textContent=vc?"Datos de "+vc.nombre:(h<13?"Buenos días":h<21?"Buenas tardes":"Buenas noches")+(pf.nombre?", "+pf.nombre:"");
@@ -168,20 +220,25 @@ function pintarInicio(){
   $("tCon").hidden=$("tEst").hidden=!adm;$("bEquipo").hidden=!adm||!Nube.configurado();
   const cl=(lee("almara-clientes-v1")||{}).clientes||[],pl=(lee("almara-planos-v1")||{}).proy||[],pr=(lee("almara-pres-v1")||{}).lista||[];
   if(cl.length)$("nCli").textContent=cl.length+" cliente"+(cl.length>1?"s":"");
+  CLI_INI=cl;$("cajaBusca").hidden=!cl.length;if(!cl.length){$("resBusca").hidden=true;$("buscaIni").value=""}
   if(pl.length)$("nPla").textContent=pl.length+" plano"+(pl.length>1?"s":"");
   const np=cl.reduce((n,c)=>n+(c.trabajos||[]).length,0),pend=cl.reduce((n,c)=>n+(c.trabajos||[]).filter(t=>t.estado==="pendiente").length,0);if(np)$("nPar").textContent=np+" parte"+(np>1?"s":"")+(pend?" · "+pend+" pendiente"+(pend>1?"s":""):"");
+  $("bdPar").hidden=!pend;$("bdPar").textContent=pend;
   if(pr.length)$("nPre").textContent=pr.length+" presupuesto"+(pr.length>1?"s":"");
   const av=[];for(const c of cl){const m=c.mant;if(!m||!m.activo)continue;
     if(m.proxima&&dias(m.proxima)<=30)av.push({c,d:dias(m.proxima),t:"Revisión"});if(m.fin&&dias(m.fin)<=30)av.push({c,d:dias(m.fin),t:"Renovar contrato"})}
   av.sort((a,b)=>a.d-b.d);
   // Otros avisos: contactos nuevos, presupuestos aceptados, material bajo e inventario del mes
-  const ct=adm?lee("almara-contactos-cache")||[]:[],ctN=ct.filter(c=>c.estado==="nuevo").length;$("nCon").textContent=ctN?ctN+" nuevo"+(ctN>1?"s":"")+" sin atender":"Peticiones de la web";
-  const mat=lee("almara-material-v1")||{items:[],inventarios:[]},bajo=(mat.items||[]).filter(i=>i.min>0&&i.stock<=i.min),mes=hoy().slice(0,7),inv=(mat.inventarios||[]).some(v=>v.mes===mes);
-  if((mat.items||[]).length)$("nMat").textContent=bajo.length?bajo.length+" por reponer":(inv?"Inventario al día":"Inventario del mes pendiente");
+  const ct=adm?lee("almara-contactos-cache")||[]:[],ctN=ct.filter(c=>c.estado==="nuevo").length;$("nCon").textContent=ctN?ctN+" nuevo"+(ctN>1?"s":"")+" sin atender":"Peticiones de la web";$("bdCon").hidden=!ctN;$("bdCon").textContent=ctN;
+  const mat=lee("almara-material-v1")||{items:[],inventarios:[]},sinEstrenar=!(mat.inventarios||[]).length&&(mat.items||[]).every(i=>!(i.stock>0)),bajo=sinEstrenar?[]:(mat.items||[]).filter(i=>i.min>0&&i.stock<=i.min),mes=hoy().slice(0,7),inv=(mat.inventarios||[]).some(v=>v.mes===mes);
+  // Material sin estrenar (lista de ejemplo con todo a cero): no es que falte de todo, es que aún no se ha apuntado nada
+  if((mat.items||[]).length)$("nMat").textContent=sinEstrenar?"Apunta lo que llevas en la furgoneta":bajo.length?bajo.length+" por reponer":(inv?"Inventario al día":"Inventario del mes pendiente");
+  $("bdMat").hidden=!bajo.length;$("bdMat").textContent=bajo.length;
+  pintarPrimeros(cl.length,pr.length,adm);
   const otros=[];if(ctN)otros.push(`<a href="/contactos/"><span>📨 ${ctN} contacto${ctN>1?"s":""} nuevo${ctN>1?"s":""} de la web</span><b style="color:var(--acento)">Ver</b></a>`);
   for(const p of pr.filter(p=>p.enlace&&p.enlace.estado==="aceptado"&&p.enlace.respondido&&dias(p.enlace.respondido.slice(0,10))>=-14))otros.push(`<a href="/planos/?pres=${encodeURIComponent(p.id)}"><span>✅ ${esc(p.numero)} aceptado por ${esc(p.enlace.firma_nombre||p.cliente.nombre||"el cliente")}</span><b style="color:#2E9D5B">${cuando(dias(p.enlace.respondido.slice(0,10)))}</b></a>`);
   if(bajo.length)otros.push(`<a href="/material/"><span>📦 Reponer: ${esc(bajo.slice(0,3).map(i=>i.nombre).join(", "))}${bajo.length>3?"…":""}</span><b style="color:var(--rojo)">${bajo.length}</b></a>`);
-  if((mat.items||[]).length&&!inv&&new Date().getDate()>=25)otros.push(`<a href="/material/?inv=1"><span>📋 Inventario de la furgoneta de este mes</span><b style="color:var(--nar)">Hacer</b></a>`);
+  if((mat.items||[]).length&&!sinEstrenar&&!inv&&new Date().getDate()>=25)otros.push(`<a href="/material/?inv=1"><span>📋 Inventario de la furgoneta de este mes</span><b style="color:var(--nar)">Hacer</b></a>`);
   const mh=av.map(a=>`<a href="/clientes/?id=${encodeURIComponent(a.c.id)}"><span>🔧 ${esc(a.c.nombre)} · ${a.t}</span><b style="color:${a.d<0?"var(--rojo)":"var(--nar)"};white-space:nowrap">${cuando(a.d)}</b></a>`);
   const todos=otros.concat(mh);$("avisos").innerHTML=todos.length?`<h3>🔔 Avisos</h3><div class="alerta">${todos.join("")}</div>`:"";
   estadoNube()}
@@ -243,7 +300,8 @@ $("vCuenta").addEventListener("click",e=>{if(e.target===$("vCuenta")||e.target.c
 $("bBorrarAlta").onclick=async()=>{if(!confirm("¿Eliminar tu cuenta para siempre? No se puede deshacer."))return;
   try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}$("errorAlta").textContent="No se ha podido eliminar: "+r}catch(e){$("errorAlta").textContent="No se ha podido eliminar: "+e.message}};
 // ---------- Formulario público de contacto (solo administrador) ----------
-$("bForm").onclick=()=>{const pf=Nube.perfil()||{},url=location.origin+"/c/?e="+encodeURIComponent(pf.empresa_id||"");
+$("buscaIni").addEventListener("input",buscarIni);
+$("bForm").onclick=()=>{localStorage.setItem("almara-vio-form","1");const pf=Nube.perfil()||{},url=location.origin+"/c/?e="+encodeURIComponent(pf.empresa_id||"");
   $("fmCuerpo").innerHTML=`<p style="margin:0 0 6px;color:var(--gris);font-size:14px;line-height:1.45">Este es el formulario de contacto de <b>${esc(pf.empresa||"tu empresa")}</b>. Lo que escriban tus clientes te llega a <b>Contactos web</b>. Ponlo en tu web, en tu perfil de Instagram o envíalo por WhatsApp.</p>
     <div class="canal" style="font-size:13px">${esc(url)}</div><button class="bt az" id="fmCopiar">Copiar enlace</button><a class="bt" href="${esc(url)}" target="_blank" rel="noopener">Abrir</a>`;
   $("fmCopiar").onclick=async()=>{try{await navigator.clipboard.writeText(url);$("fmCopiar").textContent="Copiado ✓"}catch(e){prompt("Copia el enlace:",url)}};
