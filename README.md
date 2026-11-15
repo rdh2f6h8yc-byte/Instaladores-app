@@ -33,7 +33,24 @@ Cada empresa se da de alta sola, tiene sus propios datos y su propio equipo de t
   Mientras estén vacíos, la app pide escribir a `soporte`.
 - **Eliminar la cuenta**: el administrador borra su cuenta y la empresa entera. A un técnico lo da de baja su administrador.
 
+## Activación automática al pagar
+
+La función `supabase/functions/stripe/index.ts` recibe los avisos de Stripe y pone a cada empresa la fecha
+hasta la que tiene acceso (fin del periodo pagado más 2 días de margen). Nunca acorta una fecha.
+
+1. Ejecuta otra vez `supabase.sql` (crea `registrar_pago`).
+2. Supabase → **Edge Functions** → crea una función llamada `stripe`, pega el contenido de `index.ts`
+   y despliégala con **Verify JWT desactivado**.
+3. Supabase → Edge Functions → **Secrets**: añade `STRIPE_SECRET_KEY` (clave secreta de Stripe) y,
+   después del paso 4, `STRIPE_WEBHOOK_SECRET`.
+4. Stripe → Desarrolladores → **Webhooks** → añade el destino
+   `https://<tu-proyecto>.supabase.co/functions/v1/stripe` con los eventos `checkout.session.completed`,
+   `invoice.paid`, `customer.subscription.updated` y `customer.subscription.deleted`.
+   Copia su secreto de firma (`whsec_…`) al secreto `STRIPE_WEBHOOK_SECRET`.
+
+Las claves `sk_…` y `whsec_…` no se guardan nunca en este repositorio.
+Si alguien paga sin pasar por la app (sin la referencia de su empresa), hay que activarlo a mano.
+
 ## Pendiente
 
-- Activación automática al pagar (ahora se activa a mano con el `update` de arriba).
 - Avisos al móvil (desactivados con `avisos: false` en `config.js`).

@@ -382,6 +382,30 @@ begin
   return 'ok';
 end $$;
 
+-- Suscripción de pago (Stripe). La función «stripe» (supabase/functions/stripe) llama a registrar_pago
+-- cada vez que Stripe cobra: guarda quién paga y alarga la fecha de acceso. Nunca la acorta.
+alter table public.empresas add column if not exists stripe_cliente text;
+alter table public.empresas add column if not exists stripe_suscripcion text;
+
+create or replace function public.registrar_pago(p_empresa uuid, p_cliente text, p_suscripcion text, p_hasta timestamptz) returns text
+language plpgsql security definer set search_path = public as $$
+declare v_id uuid;
+begin
+  if p_empresa is not null then select id into v_id from public.empresas where id = p_empresa; end if;
+  if v_id is null and p_suscripcion is not null then
+    select id into v_id from public.empresas where stripe_suscripcion = p_suscripcion limit 1; end if;
+  if v_id is null and p_cliente is not null then
+    select id into v_id from public.empresas where stripe_cliente = p_cliente limit 1; end if;
+  if v_id is null then return 'sin_empresa'; end if;
+  update public.empresas
+     set stripe_cliente = coalesce(p_cliente, stripe_cliente),
+         stripe_suscripcion = coalesce(p_suscripcion, stripe_suscripcion),
+         pagado_hasta = case when p_hasta is null then pagado_hasta
+                             else greatest(coalesce(pagado_hasta, p_hasta), p_hasta) end
+   where id = v_id;
+  return 'ok';
+end $$;
+
 -- =====================================================================
 -- 9) PERMISOS
 -- =====================================================================
@@ -400,6 +424,10 @@ grant execute on function public.mi_perfil(), public.crear_empresa(text, text), 
 
 revoke all on function public.eliminar_cuenta() from public, anon;
 grant execute on function public.eliminar_cuenta() to authenticated;
+
+-- Solo la puede llamar el servidor (la función «stripe»), nunca un usuario de la app
+revoke all on function public.registrar_pago(uuid, text, text, timestamptz) from public, anon, authenticated;
+grant execute on function public.registrar_pago(uuid, text, text, timestamptz) to service_role;
 
 revoke all on function public.ver_presupuesto(uuid) from public;
 revoke all on function public.responder_presupuesto(uuid, boolean, text, text, text, text) from public;
