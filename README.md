@@ -29,7 +29,7 @@ Cada empresa se da de alta sola, tiene sus propios datos y su propio equipo de t
 ## Cuenta y suscripción
 
 - **Cuenta y suscripción** (en la portada): estado del plan, botón para suscribirse y eliminar la cuenta.
-- En `config.js`: `precio` (texto), `pago` (enlace de pago de Stripe) y `portal` (portal de cliente de Stripe para cancelar).
+- En `config.js`: `precioMensual` y `precioAnual` (textos), `pagoMensual` y `pagoAnual` (enlaces de pago de Stripe) y `portal` (portal de cliente de Stripe para cancelar).
   Mientras estén vacíos, la app pide escribir a `soporte`.
 - **Eliminar la cuenta**: el administrador borra su cuenta y la empresa entera. A un técnico lo da de baja su administrador.
 
