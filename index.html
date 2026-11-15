@@ -8,11 +8,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Instaladores">
+<meta name="apple-mobile-web-app-title" content="Borna">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" href="/icon-192.png">
-<title>App para instaladores</title>
+<title>Borna</title>
 <style>
 :root{--azul:#0B1F3A;--acento:#1E88E5;--gris:#5F6B7A;--claro:#EEF2F7;--borde:#D6DEE8;--rojo:#C62828;--nar:#E8730C;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -71,7 +71,7 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
 </head>
 <body>
 <section id="acceso">
-  <div class="marca"><img class="logo" src="/icon-192.png" alt=""><h1 data-producto>App para instaladores</h1><p>Clientes · Planos · Presupuestos</p></div>
+  <div class="marca"><img class="logo" src="/icon-192.png" alt=""><h1 data-producto>Borna</h1><p>Clientes · Planos · Presupuestos</p></div>
   <div class="aviso-conf" id="avisoConf" hidden>Falta conectar Supabase: pega la Project URL y la anon key en el archivo <b>config.js</b>. Mientras tanto puedes entrar y usar las apps solo en este móvil.</div>
   <form id="fAcceso" autocomplete="on">
     <label for="email">Correo</label>
@@ -93,7 +93,7 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
     <p style="color:#9FB4CF;font-size:13px;line-height:1.45;margin:14px 0 0">¿Trabajas para una empresa que ya usa la app? Pídele a tu jefe que te añada con este mismo correo desde <b>Equipo</b> y vuelve a entrar.</p>
     <button type="button" id="bSalirAlta" style="display:block;width:100%;margin-top:8px;background:none;color:#CFE0F5;font-size:14px;font-weight:700;padding:10px">Cerrar sesión</button>
   </form>
-  <div class="pie">Para empresas instaladoras</div>
+  <div class="pie">La app de las empresas instaladoras</div>
 </section>
 
 <section id="inicio">
@@ -138,7 +138,7 @@ const lee=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return nul
 const volver=new URLSearchParams(location.search).get("volver");
 
 function dentro(){return Nube.configurado()?!!Nube.sesion():localStorage.getItem(LOCAL)==="1"}
-const CFG=window.ALMARA_CONFIG||{},PRODUCTO=CFG.producto||"App para instaladores";
+const CFG=window.ALMARA_CONFIG||{},PRODUCTO=CFG.producto||"Borna";
 document.title=PRODUCTO;document.querySelectorAll("[data-producto]").forEach(e=>e.textContent=PRODUCTO);
 let modoAlta=false; // false = entrar · true = crear cuenta
 function pintarModo(){$("bEntrar").textContent=modoAlta?"Crear cuenta":"Entrar";$("pass").autocomplete=modoAlta?"new-password":"current-password";

@@ -2,7 +2,7 @@
 // La publishable key es pública por diseño: la seguridad la ponen las reglas (RLS) de la base de datos.
 window.ALMARA_CONFIG = {
   // Nombre comercial de la app (sale en la portada y en el título)
-  producto: "App para instaladores",
+  producto: "Borna",
   // Correo o teléfono al que te escriben las empresas para activar la suscripción
   soporte: "",
   supabaseUrl: "",

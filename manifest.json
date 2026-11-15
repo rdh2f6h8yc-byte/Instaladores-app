@@ -1,6 +1,6 @@
 {
-  "name": "App para instaladores",
-  "short_name": "Instaladores",
+  "name": "Borna",
+  "short_name": "Borna",
   "description": "Clientes, planos, presupuestos y partes de trabajo para empresas instaladoras",
   "start_url": "/",
   "scope": "/",

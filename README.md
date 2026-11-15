@@ -1,4 +1,4 @@
-# App para instaladores
+# Borna
 
 Clientes, planos, presupuestos, partes de trabajo y material para empresas instaladoras.
 Cada empresa se da de alta sola, tiene sus propios datos y su propio equipo de técnicos.
