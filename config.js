@@ -5,8 +5,8 @@ window.ALMARA_CONFIG = {
   producto: "Borna",
   // Correo o teléfono al que te escriben las empresas para activar la suscripción
   soporte: "",
-  supabaseUrl: "",
-  supabaseAnonKey: "",
+  supabaseUrl: "https://arhczbzfrukzugwxmfri.supabase.co",
+  supabaseAnonKey: "sb_publishable_mfH8pMp6z9zSlCBySj6XIw_ZyluI17O",
   // Avisos al móvil: desactivados hasta montar el envío en el proyecto nuevo
   avisos: false,
   vapidPublicKey: ""
