@@ -428,9 +428,7 @@ begin
   if found then
     if q.rol <> 'admin' then return 'solo_admin'; end if;
     select coalesce(array_agg(user_id), '{}') into v_ids from public.equipo where empresa_id = q.empresa_id;
-    delete from storage.objects
-     where bucket_id = 'fotos'
-       and (storage.foldername(name))[1] in (select x::text from unnest(v_ids) as x);
+    -- Las fotos ya las borra la app con la API de Storage. Supabase no deja borrarlas desde SQL.
     delete from public.datos where user_id = any (v_ids);
     delete from public.presupuestos_publicos where user_id = any (v_ids);
     delete from public.empresas where id = q.empresa_id;
