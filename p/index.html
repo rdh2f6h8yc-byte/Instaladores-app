@@ -78,7 +78,8 @@ async function cargar(){
   if(!token||!/^[0-9a-f-]{36}$/i.test(token)){$("main").innerHTML=`<div class="cargando">Enlace no válido.</div>`;return}
   try{P=await Nube.rpcPublica("ver_presupuesto",{p_token:token})}catch(e){$("main").innerHTML=`<div class="cargando">No se ha podido cargar el presupuesto. Revisa la conexión y vuelve a abrir el enlace.</div>`;return}
   if(!P){$("main").innerHTML=`<div class="cargando">Este presupuesto ya no está disponible.</div>`;return}
-  pintar()}
+  pintar();
+  if(P.estado==="enviado")Nube.avisar("visto",token).catch(()=>{})}
 function pintar(){const d=P.datos,E=d.empresa||{},c=d.cliente||{};
   document.title="Presupuesto "+P.numero+(E.marca?" · "+E.marca:"");$("marca").textContent=E.marca||"";$("lema").textContent=E.lema||"";$("num").textContent=P.numero;
   const caducado=d.validoHasta&&new Date(d.validoHasta+"T23:59:59")<new Date();
@@ -113,10 +114,10 @@ function firmaPNG(){const k=Math.min(1,600/cv.width),o=document.createElement("c
 $("fOk").onclick=async()=>{if(!trazo){alert("Firma en el recuadro para aceptar");return}if(!$("fNom").value.trim()){alert("Escribe tu nombre");return}
   $("fOk").disabled=true;$("fOk").textContent="Enviando…";
   try{const r=await Nube.rpcPublica("responder_presupuesto",{p_token:token,p_acepta:true,p_nombre:$("fNom").value.trim(),p_dni:$("fDni").value.trim(),p_firma:firmaPNG(),p_comentario:$("fCom").value.trim()});
-    $("vFirma").classList.remove("on");await cargar();if(r==="caducado")alert("Este presupuesto ha caducado.");else if(r!=="ok")alert("Este presupuesto ya estaba respondido.")}catch(e){alert("No se ha podido enviar. Revisa la conexión e inténtalo de nuevo.")}
+    $("vFirma").classList.remove("on");await cargar();if(r==="ok")Nube.avisar("presupuesto",token).catch(()=>{});else if(r==="caducado")alert("Este presupuesto ha caducado.");else alert("Este presupuesto ya estaba respondido.")}catch(e){alert("No se ha podido enviar. Revisa la conexión e inténtalo de nuevo.")}
   $("fOk").disabled=false;$("fOk").textContent="Aceptar presupuesto"};
 $("bNo").onclick=()=>$("vNo").classList.add("on");$("nCancelar").onclick=()=>$("vNo").classList.remove("on");
-$("nOk").onclick=async()=>{try{const r=await Nube.rpcPublica("responder_presupuesto",{p_token:token,p_acepta:false,p_nombre:"",p_dni:"",p_firma:null,p_comentario:$("nCom").value.trim()});$("vNo").classList.remove("on");await cargar();if(r==="caducado")alert("Este presupuesto ha caducado.")}catch(e){alert("No se ha podido enviar. Inténtalo de nuevo.")}};
+$("nOk").onclick=async()=>{try{const r=await Nube.rpcPublica("responder_presupuesto",{p_token:token,p_acepta:false,p_nombre:"",p_dni:"",p_firma:null,p_comentario:$("nCom").value.trim()});$("vNo").classList.remove("on");await cargar();if(r==="ok")Nube.avisar("presupuesto",token).catch(()=>{});else if(r==="caducado")alert("Este presupuesto ha caducado.")}catch(e){alert("No se ha podido enviar. Inténtalo de nuevo.")}};
 cargar();
 </script>
 </body>

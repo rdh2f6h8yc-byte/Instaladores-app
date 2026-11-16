@@ -16,7 +16,6 @@ window.ALMARA_CONFIG = {
   webUrl: "https://instaladoresapp.vercel.app",
   supabaseUrl: "https://arhczbzfrukzugwxmfri.supabase.co",
   supabaseAnonKey: "sb_publishable_mfH8pMp6z9zSlCBySj6XIw_ZyluI17O",
-  // Avisos al móvil: desactivados hasta montar el envío en el proyecto nuevo
-  avisos: false,
-  vapidPublicKey: ""
+  // Avisos al móvil de la app instalada (App Store y Play Store)
+  avisos: true,
 };

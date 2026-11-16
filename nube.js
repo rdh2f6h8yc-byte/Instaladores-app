@@ -312,7 +312,15 @@ window.Nube = (() => {
     if (!r.ok || !j.url) throw new Error(j.error || ("HTTP " + r.status));
     return j.url;
   }
+  // Aviso push (contacto, presupuesto, prueba). Sin sesión también vale: lo usa la página pública.
+  async function avisar(tipo, id) {
+    const headers = sesion() ? await cab({ "Content-Type": "application/json" }) : { apikey: KEY, "Content-Type": "application/json" };
+    const r = await pedir("/functions/v1/avisos", { method: "POST", headers, body: JSON.stringify(id ? { tipo, id } : { tipo }) }, 15000);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || ("HTTP " + r.status));
+    return j;
+  }
   return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, crearEmpresa, eliminarCuenta, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
-    api, rpcPublica, abrirPortal, webUrl, waNum, srcImagen, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
+    api, rpcPublica, abrirPortal, avisar, webUrl, waNum, srcImagen, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
     clientes, estado: () => est, CLAVES };
 })();

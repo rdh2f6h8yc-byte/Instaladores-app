@@ -68,10 +68,17 @@ button:disabled{opacity:.5}
     if (!v("t") && !v("e")) { er.textContent = "Pon un teléfono o un correo para poder responderte."; er.hidden = false; return; }
     const b = $("b"); b.disabled = true; b.textContent = "Enviando…";
     try {
-      const r = await fetch(URLB + "/rest/v1/contactos", { method: "POST", headers: { ...cab, Prefer: "return=minimal" },
-        body: JSON.stringify({ empresa_id: emp, nombre: v("n"), telefono: v("t") || null, email: v("e") || null, localidad: v("l") || null,
-          servicio: v("s") || null, mensaje: v("m") || null, origen: "Formulario de contacto" }) });
+      let r = await fetch(URLB + "/rest/v1/rpc/enviar_contacto", { method: "POST", headers: cab,
+        body: JSON.stringify({ p_empresa: emp, p_nombre: v("n"), p_telefono: v("t") || null, p_email: v("e") || null, p_localidad: v("l") || null,
+          p_servicio: v("s") || null, p_mensaje: v("m") || null, p_origen: "Formulario de contacto" }) });
+      if (r.status === 404) {
+        r = await fetch(URLB + "/rest/v1/contactos", { method: "POST", headers: { ...cab, Prefer: "return=minimal" },
+          body: JSON.stringify({ empresa_id: emp, nombre: v("n"), telefono: v("t") || null, email: v("e") || null, localidad: v("l") || null,
+            servicio: v("s") || null, mensaje: v("m") || null, origen: "Formulario de contacto" }) });
+      }
       if (!r.ok) throw new Error("HTTP " + r.status);
+      const id = r.status === 404 ? null : await r.json().catch(() => null);
+      if (typeof id === "string") fetch(URLB + "/functions/v1/avisos", { method: "POST", headers: cab, body: JSON.stringify({ tipo: "contacto", id }) }).catch(() => {});
       $("caja").innerHTML = ""; const d = document.createElement("div"); d.className = "msg ok";
       d.textContent = "¡Gracias! Hemos recibido tu mensaje y te responderemos lo antes posible."; $("caja").appendChild(d);
     } catch (e) { er.textContent = "No se ha podido enviar. Comprueba tu conexión e inténtalo de nuevo."; er.hidden = false; b.disabled = false; b.textContent = "Enviar"; }

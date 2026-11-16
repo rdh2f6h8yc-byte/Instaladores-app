@@ -171,6 +171,7 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
 <script src="/config.js"></script>
 <script src="/comun.js"></script>
 <script src="/nube.js"></script>
+<script src="/push.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -201,6 +202,7 @@ function mostrar(){
   if(Nube.configurado()&&sinAcceso())return;
   if(volver&&volver.startsWith("/")&&!volver.startsWith("//")){location.replace(volver);return}
   $("acceso").style.display="none";$("inicio").style.display="block";pintarInicio();
+  if(window.PushBorna)PushBorna.alEntrar();
   Nube.cargarPerfil().catch(()=>{}).then(()=>{if(Nube.configurado()&&sinAcceso())throw 0;pintarInicio();return Nube.sincronizar()}).then(async()=>{try{if(Nube.sesion()&&Nube.esAdmin()){const c=await Nube.api("contactos?select=*&order=creado.desc&limit=500");localStorage.setItem("almara-contactos-cache",JSON.stringify(c))}}catch(e){}pintarInicio();estadoNube()}).catch(()=>{});
 }
 function estadoNube(){const e=Nube.estado();$("nubeTxt").innerHTML=Nube.configurado()?`<span style="color:${e.c||"#9FB4CF"}">☁︎</span> ${esc(e.t||"Conectando…")}<br><small>${esc((Nube.sesion()||{user:{}}).user.email||"")}</small>`:"Solo en este móvil"}
@@ -222,7 +224,7 @@ function buscarIni(){const q=$("buscaIni").value.trim().toLowerCase(),r=$("resBu
 function pintarInicio(){
   const h=new Date().getHours(),pf=Nube.perfil()||{},adm=Nube.esAdmin(),vc=Nube.verComo();
   $("saludo").textContent=vc?"Datos de "+vc.nombre:(h<13?"Buenos días":h<21?"Buenas tardes":"Buenas noches")+(pf.nombre?", "+pf.nombre:"");
-  $("empNom").textContent=pf.empresa||PRODUCTO;$("bForm").hidden=!adm||!Nube.configurado()||!pf.empresa_id;$("bAvisos").hidden=!CFG.avisos;
+  $("empNom").textContent=pf.empresa||PRODUCTO;$("bForm").hidden=!adm||!Nube.configurado()||!pf.empresa_id;$("bAvisos").hidden=!Nube.configurado();
   const dp=Nube.diasPrueba();$("avisoPlan").innerHTML=!Nube.activa()?`<div class="estadoAv" style="background:#FDECEC;margin-top:14px"><b>Tu periodo de prueba ha terminado.</b> Puedes ver tus datos, pero no se guardan cambios nuevos.${adm?" Escríbenos para activar la suscripción"+(CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":"")+".":" Avisa a tu administrador."}</div>`
     :dp!==null&&dp<=10?`<div class="estadoAv" style="background:#FFF8EC;margin-top:14px">Te queda${dp===1?"":"n"} <b>${Math.max(dp,0)} día${dp===1?"":"s"}</b> de prueba.${adm&&CFG.soporte?" Para seguir después, escríbenos: <b>"+esc(CFG.soporte)+"</b>":""}</div>`:"";
   $("tCon").hidden=$("tEst").hidden=!adm;$("bEquipo").hidden=!adm||!Nube.configurado();
@@ -249,7 +251,7 @@ function pintarInicio(){
   if((mat.items||[]).length&&!sinEstrenar&&!inv&&new Date().getDate()>=25)otros.push(`<a href="/material/?inv=1"><span>📋 Inventario de la furgoneta de este mes</span><b style="color:var(--nar)">Hacer</b></a>`);
   const mh=av.map(a=>`<a href="/clientes/?id=${encodeURIComponent(a.c.id)}"><span>🔧 ${esc(a.c.nombre)} · ${a.t}</span><b style="color:${a.d<0?"var(--rojo)":"var(--nar)"};white-space:nowrap">${cuando(a.d)}</b></a>`);
   const todos=otros.concat(mh);$("avisos").innerHTML=todos.length?`<h3>🔔 Avisos</h3><div class="alerta">${todos.join("")}</div>`:"";
-  estadoNube()}
+  estadoNube();estadoBoton()}
 $("verPass").onclick=()=>{const p=$("pass");p.type=p.type==="password"?"text":"password";$("verPass").textContent=p.type==="password"?"Ver":"Ocultar"};
 $("fAcceso").onsubmit=async e=>{e.preventDefault();$("error").textContent="";const b=$("bEntrar");
   if(!Nube.configurado()){localStorage.setItem(LOCAL,"1");mostrar();return}
@@ -274,7 +276,7 @@ $("bAceptarInv").onclick=async()=>{const b=$("bAceptarInv"),er=$("errorAlta");er
     er.textContent={sin_invitacion:"Esa invitación ya no está.",sin_confirmar:"Falta confirmar el correo.",ya_tienes:"Esta cuenta ya pertenece a una empresa."}[r]||r}
   catch(err){er.textContent=/abort|fetch|network|conexi/i.test(String(err.message))?"Sin conexión. Inténtalo de nuevo.":"No se ha podido aceptar: "+err.message}
   b.disabled=false;b.textContent="Aceptar y entrar en la empresa"};
-const cerrar=()=>{Nube.salir();localStorage.removeItem(LOCAL);localStorage.removeItem("almara-perfil");location.replace("/")};
+const cerrar=async()=>{if(window.PushBorna)await PushBorna.soltar().catch(()=>{});Nube.salir();localStorage.removeItem(LOCAL);localStorage.removeItem("almara-perfil");location.replace("/")};
 $("bSalirAlta").onclick=cerrar;
 $("bSalir").onclick=cerrar;
 // ---------- Cuenta, suscripción y eliminar la cuenta ----------
@@ -323,70 +325,43 @@ $("bForm").onclick=()=>{localStorage.setItem("almara-vio-form","1");const pf=Nub
   $("fmCopiar").onclick=async()=>{try{await navigator.clipboard.writeText(url);$("fmCopiar").textContent="Copiado ✓"}catch(e){prompt("Copia el enlace:",url)}};
   $("vForm").classList.add("on")};
 $("vForm").addEventListener("click",e=>{if(e.target===$("vForm")||e.target.closest("[data-cerrar]"))$("vForm").classList.remove("on")});
-// ---------- Avisos al móvil (app ntfy) ----------
-let AV=null;
-async function leerAvisos(){try{const r=await Nube.api("ajustes_avisos?id=eq.1&select=*");AV=r&&r[0]||null}catch(e){AV=undefined}return AV}
-async function guardarAvisos(cambios){await Nube.api("ajustes_avisos?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:1,app_url:Nube.webUrl(),...cambios})});await leerAvisos()}
-function estadoBoton(){pushActual().then(sub=>{$("avEstado").textContent=sub?"Activados en este dispositivo ✓":AV&&AV.ntfy_tema?"Activados con ntfy ✓":"Te avisa al llegar un contacto o cuando aceptan un presupuesto"})}
-// Notificaciones propias (Web Push)
-const VAPID=(window.ALMARA_CONFIG||{}).vapidPublicKey||"";
-const enApp=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
-const esIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-const soportaPush=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
-const aBytes=b=>{const p="=".repeat((4-b.length%4)%4),r=atob((b+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(r,c=>c.charCodeAt(0))};
-async function pushActual(){try{if(!soportaPush())return null;const r=await navigator.serviceWorker.getRegistration("/");return r?await r.pushManager.getSubscription():null}catch(e){return null}}
-async function contarPush(){try{const r=await Nube.api("push_subs?select=endpoint");return r.length}catch(e){return 0}}
-function nombreDisp(){const u=navigator.userAgent;return /iPhone/.test(u)?"iPhone":/iPad/.test(u)||esIOS()?"iPad":/Android/.test(u)?"Android":/Mac/.test(u)?"Mac":/Windows/.test(u)?"Windows":"Navegador"}
-async function guardarSub(sub){const j=sub.toJSON();await Nube.api("push_subs?on_conflict=endpoint",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
-  body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,dispositivo:nombreDisp()})})}
-async function pintarPush(){const el=$("avPush");if(!el)return;const sub=await pushActual();
-  if(!VAPID){el.innerHTML=`<p style="color:var(--gris);font-size:14px">Falta la clave de notificaciones en config.js.</p>`;return}
-  if(!soportaPush()||(esIOS()&&!enApp())){el.innerHTML=esIOS()&&!enApp()
-    ?`<div class="estadoAv" style="background:#FFF8EC">Para recibir notificaciones de la app en el iPhone, abre la app desde su <b>icono en la pantalla de inicio</b>, no desde Safari.<br><br>Si aún no lo tienes: en Safari pulsa <b>Compartir → Añadir a pantalla de inicio</b>, ábrela desde ese icono y vuelve aquí.</div>`
-    :`<div class="estadoAv" style="background:#FFF8EC">Este navegador no admite notificaciones. Usa la app añadida a la pantalla de inicio del iPhone (iOS 16.4 o posterior).</div>`;return}
-  if(sub&&Notification.permission==="granted"){el.innerHTML=`<div class="estadoAv" style="background:#E3F4EA">✓ Activadas en este ${esc(nombreDisp())}. Te llegarán con el icono de la app aunque tengas la app cerrada.</div>
-    <button class="bt az" id="pProbar">Enviar aviso de prueba</button><button class="bt" id="pQuitar">Desactivar en este dispositivo</button><div id="pRes" style="font-size:13px;color:var(--gris);margin-top:6px"></div>`;
-    $("pProbar").onclick=async()=>{$("pRes").textContent="Enviando… Bloquea el móvil o sal al inicio para verlo.";try{const r=await Nube.api("rpc/probar_aviso",{method:"POST",body:"{}"});$("pRes").textContent=r==="ok"?"Enviado: te tiene que llegar en unos segundos.":"No hay dispositivos activados."}catch(e){$("pRes").textContent="No se ha podido enviar: "+e.message}};
-    $("pQuitar").onclick=async()=>{const j=sub.toJSON();await sub.unsubscribe().catch(()=>{});await Nube.api("push_subs?endpoint=eq."+encodeURIComponent(j.endpoint),{method:"DELETE"}).catch(()=>{});pintarAvisos()};
-    return}
-  if(Notification.permission==="denied"){el.innerHTML=`<div class="estadoAv" style="background:#FDECEC">Las notificaciones de la app están bloqueadas. Actívalas en <b>Ajustes → Notificaciones</b> y vuelve aquí.</div>`;return}
-  el.innerHTML=`<p style="margin:0 0 8px;color:var(--gris);font-size:14px">Te llegarán al momento, con el icono de la app y aunque tengas la app cerrada.</p><button class="bt az" id="pActivar">Activar notificaciones en este ${esc(nombreDisp())}</button><div id="pRes" style="font-size:13px;color:var(--gris);margin-top:6px"></div>`;
-  $("pActivar").onclick=async()=>{const res=$("pRes");try{res.textContent="Pidiendo permiso…";
-      const perm=await Notification.requestPermission();if(perm!=="granted"){res.textContent="No has dado permiso. Puedes activarlo en Ajustes → Notificaciones.";return}
-      const reg=await navigator.serviceWorker.register("/sw.js");await navigator.serviceWorker.ready;
-      const s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:aBytes(VAPID)});
-      await guardarSub(s);if(!AV&&Nube.esAdmin())await guardarAvisos({}).catch(()=>{});pintarAvisos()}
-    catch(e){res.textContent="No se ha podido activar: "+e.message}}}
-function nuevoCanal(){const a="abcdefghijkmnpqrstuvwxyz23456789",r=crypto.getRandomValues(new Uint8Array(14));return"avisos-"+[...r].map(x=>a[x%a.length]).join("")}
-async function pintarAvisos(){const c=$("avCuerpo");
-  if(!Nube.configurado()||!Nube.sesion()){c.innerHTML=`<p>Para recibir avisos tienes que tener la nube conectada y haber entrado con tu cuenta.</p>`;return}
+// ---------- Avisos al móvil ----------
+function estadoBoton(){const nativa=window.PushBorna&&PushBorna.nativa();
+  if(!nativa){$("avEstado").textContent="Actívalas en la app del móvil";return}
+  PushBorna.concedido().then(ok=>{$("avEstado").textContent=ok?"Activadas en este móvil ✓":"Te avisa de contactos y presupuestos"})}
+async function pintarAvisos(){const c=$("avCuerpo"),adm=Nube.esAdmin();
+  if(!Nube.configurado()||!Nube.sesion()){c.innerHTML=`<p>Para recibir avisos tienes que haber entrado con tu cuenta.</p>`;return}
   c.innerHTML=`<p style="color:var(--gris)">Cargando…</p>`;
-  if(Nube.esTecnico()){c.innerHTML=`<p style="margin:0 0 8px;color:var(--gris);font-size:14px">Te avisará cuando un cliente abra, acepte o rechace uno de tus presupuestos.</p><div id="avPush"></div>`;pintarPush();return}
-  await leerAvisos();
-  if(AV===undefined){c.innerHTML=`<div class="estadoAv" style="background:#FDECEC">No se han podido leer los ajustes. Comprueba que tienes conexión.</div>`;return}
-  const t=AV&&AV.ntfy_tema;
-  const nPush=await contarPush();
-  let h=`<h3 style="margin:4px 0 6px">📱 Notificaciones de la app</h3><div id="avPush"></div><h3 style="margin:22px 0 6px">Alternativa: app ntfy</h3>`;
-  h+=t?`<div class="estadoAv" style="background:#E3F4EA">✓ Avisos de ntfy activados en el canal:</div><div class="canal">${esc(t)}</div>`
-    :`<p style="margin:0 0 6px;color:var(--gris);font-size:14px">Si las notificaciones de la app no te funcionan, puedes recibirlas con la app gratuita ntfy:</p>`;
-  h+=`<div class="paso"><span class="n">1</span><div>Instala la app gratuita <b>ntfy</b>.<br><a class="bt" href="https://apps.apple.com/app/id1625396347" target="_blank" rel="noopener">Abrir en la App Store</a></div></div>
-  <div class="paso"><span class="n">2</span><div>${t?"Tu canal privado ya está creado.":"Crea tu canal privado (un nombre secreto que solo conoces tú)."}<br>
-    ${t?`<button class="bt" id="avCopiar">Copiar nombre del canal</button>`:`<button class="bt az" id="avCrear">Crear mi canal</button>`}</div></div>
-  <div class="paso"><span class="n">3</span><div>Abre ntfy, pulsa <b>+</b>, pega el nombre del canal en «Topic name» y pulsa <b>Subscribe</b>. Cuando te pida permiso para notificaciones, pulsa <b>Permitir</b>.</div></div>
-  <div class="paso"><span class="n">4</span><div>Comprueba que funciona.<br><button class="bt az" id="avProbar" ${t?"":"disabled style='opacity:.4'"}>Enviar aviso de prueba</button><span id="avRes" style="font-size:13px;color:var(--gris)"></span></div></div>`;
-  if(t||nPush)h+=`<h3 style="margin:16px 0 4px">Qué quieres que te avise</h3>
-    <label class="sw"><span>📨 Contacto nuevo desde la web</span><input type="checkbox" data-k="contactos" ${AV.contactos?"checked":""}></label>
-    <label class="sw"><span>✅ Presupuesto aceptado o rechazado</span><input type="checkbox" data-k="presupuestos" ${AV.presupuestos?"checked":""}></label>
-    <label class="sw"><span>👀 El cliente abre el presupuesto</span><input type="checkbox" data-k="visto" ${AV.visto?"checked":""}></label>
-    <p style="font-size:12px;color:var(--gris);line-height:1.4;margin-top:12px">Al tocar el aviso se abre la app en la pantalla correspondiente. Los avisos pasan por el servicio gratuito ntfy.sh; el nombre del canal es secreto, no lo compartas.</p>
-    ${t?`<button class="bt" id="avCambiar" style="margin-top:6px">Cambiar el canal de ntfy (si lo has compartido por error)</button>`:""}`;
-  c.innerHTML=h;estadoBoton();pintarPush();
-  const crear=async()=>{try{await guardarAvisos({ntfy_tema:nuevoCanal()});pintarAvisos()}catch(e){alert("No se ha podido crear el canal: "+e.message)}};
-  if($("avCrear"))$("avCrear").onclick=crear;
-  if($("avCambiar"))$("avCambiar").onclick=async()=>{if(confirm("Se creará un canal nuevo y tendrás que suscribirte otra vez en ntfy. ¿Seguir?"))crear()};
-  if($("avCopiar"))$("avCopiar").onclick=async()=>{try{await navigator.clipboard.writeText(t);$("avCopiar").textContent="Copiado ✓"}catch(e){prompt("Copia el nombre del canal:",t)}};
-  if($("avProbar"))$("avProbar").onclick=async()=>{$("avRes").textContent=" Enviando…";try{const r=await Nube.api("rpc/probar_aviso",{method:"POST",body:"{}"});$("avRes").textContent=r==="ok"?" Enviado: te tiene que llegar en unos segundos.":" Falta crear el canal."}catch(e){$("avRes").textContent=" No se ha podido enviar."}};
-  c.querySelectorAll("[data-k]").forEach(i=>i.onchange=async()=>{try{await guardarAvisos({[i.dataset.k]:i.checked})}catch(e){i.checked=!i.checked;alert("No se ha podido guardar")}})}
+  const prefs=await Nube.api("rpc/mis_avisos",{method:"POST",body:"{}"}).catch(()=>null);
+  if(!prefs){c.innerHTML=`<div class="estadoAv" style="background:#FDECEC">No se han podido leer los avisos. Comprueba la conexión. Si acabas de actualizar, falta ejecutar el SQL nuevo en Supabase.</div>`;return}
+  const nativa=window.PushBorna&&PushBorna.nativa();
+  let h=nativa
+    ?`<p style="margin:0 0 8px;color:var(--gris);font-size:14px;line-height:1.45">${adm?"Te avisamos cuando entra un contacto por la web o cuando un cliente abre, acepta o rechaza un presupuesto.":"Te avisamos cuando un cliente abre, acepta o rechaza uno de tus presupuestos."}</p><div id="avPush"></div>`
+    :`<div class="estadoAv" style="background:#FFF8EC">Las notificaciones llegan en la app instalada desde App Store o Play Store, no en el navegador. Ábrela en el móvil y pulsa <b>Activar</b>.</div>`;
+  h+=`<h3 style="margin:16px 0 4px">Qué quieres que te avise</h3>`;
+  if(adm)h+=`<label class="sw"><span>📨 Contacto nuevo desde la web</span><input type="checkbox" data-k="contactos" ${prefs.contactos?"checked":""}></label>`;
+  h+=`<label class="sw"><span>✅ Presupuesto aceptado o rechazado</span><input type="checkbox" data-k="presupuestos" ${prefs.presupuestos?"checked":""}></label>
+    <label class="sw"><span>👀 El cliente abre el presupuesto</span><input type="checkbox" data-k="visto" ${prefs.visto?"checked":""}></label>
+    <p style="font-size:12px;color:var(--gris);line-height:1.4;margin-top:12px">Al tocar el aviso se abre la pantalla correspondiente. Llegan aunque tengas la app cerrada.</p>`;
+  c.innerHTML=h;estadoBoton();
+  if(nativa)pintarPushNativo();
+  c.querySelectorAll("[data-k]").forEach(i=>i.onchange=async()=>{
+    const siguiente={contactos:prefs.contactos,presupuestos:prefs.presupuestos,visto:prefs.visto,[i.dataset.k]:i.checked};
+    try{await Nube.api("rpc/guardar_avisos",{method:"POST",body:JSON.stringify({p_contactos:!!siguiente.contactos,p_presupuestos:!!siguiente.presupuestos,p_visto:!!siguiente.visto})});prefs[i.dataset.k]=i.checked}
+    catch(e){i.checked=!i.checked;alert("No se ha podido guardar")}})}
+async function pintarPushNativo(){const el=$("avPush");if(!el)return;const ok=await PushBorna.concedido();
+  if(ok){el.innerHTML=`<div class="estadoAv" style="background:#E3F4EA">✓ Activadas en este móvil. Te llegan aunque la app esté cerrada.</div>
+    <button class="bt az" id="pProbar">Enviar aviso de prueba</button><div id="pRes" style="font-size:13px;color:var(--gris);margin-top:6px"></div>`;
+    $("pProbar").onclick=async()=>{const res=$("pRes");res.textContent="Enviando…";
+      try{const r=await Nube.avisar("prueba");
+        res.textContent=r.ok?"Enviado: te tiene que llegar en unos segundos.":r.motivo==="sin_dispositivos"?"Este móvil aún no está registrado. Cierra la pantalla y vuelve a pulsar Activar.":r.motivo==="sin_clave"?"Falta conectar "+(r.falta||"el envío")+" en Supabase. El móvil ya está apuntado.":"No se ha podido enviar."}
+      catch(e){res.textContent="No se ha podido enviar: "+e.message}};
+    return}
+  el.innerHTML=`<p style="margin:0 0 8px;color:var(--gris);font-size:14px">Te pedirá permiso la primera vez. Después llegan solas.</p>
+    <button class="bt az" id="pActivar">Activar notificaciones</button><div id="pRes" style="font-size:13px;color:var(--gris);margin-top:6px"></div>`;
+  $("pActivar").onclick=async()=>{const res=$("pRes");res.textContent="Pidiendo permiso…";
+    try{await PushBorna.activar();res.textContent="Permiso concedido. Registrando este móvil…";setTimeout(pintarAvisos,1200)}
+    catch(e){res.textContent=e.message==="denegado"?"No has dado permiso. Actívalo en Ajustes → Notificaciones y vuelve aquí.":(window.__pushError||"No se ha podido activar. "+e.message)}}}
 $("bAvisos").onclick=()=>{$("vAvisos").classList.add("on");pintarAvisos()};
 $("vAvisos").addEventListener("click",e=>{if(e.target===$("vAvisos")||e.target.closest("[data-cerrar]"))$("vAvisos").classList.remove("on")});
 // ---------- Equipo (solo administrador) ----------
@@ -425,7 +400,7 @@ async function pintarEquipo(){const c=$("eqCuerpo");c.innerHTML=`<p style="color
 $("bEquipo").onclick=()=>{$("vEquipo").classList.add("on");pintarEquipo()};
 $("vEquipo").addEventListener("click",e=>{if(e.target===$("vEquipo")||e.target.closest("[data-cerrar]"))$("vEquipo").classList.remove("on")});
 mostrar();
-if(CFG.avisos&&Nube.sesion())leerAvisos().then(estadoBoton).then(async()=>{const s=await pushActual();if(s&&Notification.permission==="granted")guardarSub(s).catch(()=>{})});
+if(window.PushBorna)PushBorna.alEntrar();
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("/sw.js").catch(()=>{});
 </script>
 </body>

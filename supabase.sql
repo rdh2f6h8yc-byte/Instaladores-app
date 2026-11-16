@@ -486,6 +486,143 @@ grant execute on function public.mi_empresa(), public.soy_admin(), public.mismo_
   public.es_mi_admin(uuid), public.empresa_activa(), public.carpeta_permitida(text) to authenticated;
 
 -- =====================================================================
+-- 10) NOTIFICACIONES DE LA APP (iPhone y Android)
+-- =====================================================================
+alter table public.contactos add column if not exists avisado_en timestamptz;
+alter table public.presupuestos_publicos add column if not exists aviso_visto timestamptz;
+alter table public.presupuestos_publicos add column if not exists aviso_respuesta timestamptz;
+
+-- Un contacto público no puede marcarse como ya avisado al crearse
+drop policy if exists "cualquiera puede enviar" on public.contactos;
+create policy "cualquiera puede enviar" on public.contactos for insert to anon, authenticated
+  with check (estado = 'nuevo' and avisado_en is null and public.existe_empresa(empresa_id));
+
+-- Móviles donde hay que avisar. El token lo escribe solo su dueño, a través de la función.
+create table if not exists public.dispositivos (
+  token text primary key check (char_length(token) between 20 and 4096),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  plataforma text not null check (plataforma in ('ios', 'android')),
+  creado timestamptz not null default now()
+);
+create index if not exists dispositivos_usuario on public.dispositivos (user_id);
+alter table public.dispositivos enable row level security;
+
+-- Qué quiere recibir cada persona. Si no hay fila, contactos y presupuestos sí, «visto» no.
+create table if not exists public.avisos_prefs (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  contactos boolean not null default true,
+  presupuestos boolean not null default true,
+  visto boolean not null default false
+);
+alter table public.avisos_prefs enable row level security;
+
+create or replace function public.guardar_dispositivo(p_token text, p_plataforma text) returns text
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Sin sesión'; end if;
+  if p_plataforma not in ('ios', 'android') then return 'plataforma'; end if;
+  if p_token is null or char_length(btrim(p_token)) < 20 or char_length(p_token) > 4096 then return 'token'; end if;
+  if not exists (select 1 from public.equipo where user_id = auth.uid() and rol <> 'baja') then return 'sin_empresa'; end if;
+  insert into public.dispositivos (token, user_id, plataforma)
+    values (btrim(p_token), auth.uid(), p_plataforma)
+    on conflict (token) do update set user_id = excluded.user_id, plataforma = excluded.plataforma, creado = now();
+  return 'ok';
+end $$;
+
+create or replace function public.quitar_dispositivo(p_token text) returns text
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Sin sesión'; end if;
+  delete from public.dispositivos where token = btrim(coalesce(p_token, '')) and user_id = auth.uid();
+  return 'ok';
+end $$;
+
+create or replace function public.mis_avisos() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare r public.avisos_prefs;
+begin
+  if auth.uid() is null then raise exception 'Sin sesión'; end if;
+  select * into r from public.avisos_prefs where user_id = auth.uid();
+  if not found then
+    return jsonb_build_object('contactos', true, 'presupuestos', true, 'visto', false);
+  end if;
+  return jsonb_build_object('contactos', r.contactos, 'presupuestos', r.presupuestos, 'visto', r.visto);
+end $$;
+
+create or replace function public.guardar_avisos(p_contactos boolean, p_presupuestos boolean, p_visto boolean) returns text
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Sin sesión'; end if;
+  insert into public.avisos_prefs (user_id, contactos, presupuestos, visto)
+    values (auth.uid(), coalesce(p_contactos, true), coalesce(p_presupuestos, true), coalesce(p_visto, false))
+    on conflict (user_id) do update set contactos = excluded.contactos, presupuestos = excluded.presupuestos, visto = excluded.visto;
+  return 'ok';
+end $$;
+
+-- El formulario público no puede leer la tabla, así que el id vuelve por aquí
+create or replace function public.enviar_contacto(p_empresa uuid, p_nombre text, p_telefono text, p_email text, p_localidad text, p_servicio text, p_mensaje text, p_origen text) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare v_id uuid; v_nombre text := left(btrim(coalesce(p_nombre, '')), 120);
+begin
+  if not public.existe_empresa(p_empresa) or v_nombre = '' then return null; end if;
+  if char_length(coalesce(p_telefono, '')) > 40 or char_length(coalesce(p_email, '')) > 160
+     or char_length(coalesce(p_localidad, '')) > 120 or char_length(coalesce(p_servicio, '')) > 80
+     or char_length(coalesce(p_mensaje, '')) > 2000 or char_length(coalesce(p_origen, '')) > 300 then
+    return null;
+  end if;
+  insert into public.contactos (empresa_id, nombre, telefono, email, localidad, servicio, mensaje, origen)
+    values (p_empresa, v_nombre, nullif(btrim(coalesce(p_telefono, '')), ''), nullif(btrim(coalesce(p_email, '')), ''),
+            nullif(btrim(coalesce(p_localidad, '')), ''), nullif(btrim(coalesce(p_servicio, '')), ''),
+            nullif(btrim(coalesce(p_mensaje, '')), ''), nullif(left(btrim(coalesce(p_origen, '')), 300), ''))
+    returning id into v_id;
+  return v_id;
+end $$;
+
+-- Avisa a la función «avisos» sin frenar el guardado si el envío no está disponible
+create or replace function public.disparar_aviso() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare v_url text := 'https://arhczbzfrukzugwxmfri.supabase.co/functions/v1/avisos';
+        v_key text := 'sb_publishable_mfH8pMp6z9zSlCBySj6XIw_ZyluI17O';
+        v_tipo text; v_id text;
+begin
+  if TG_TABLE_NAME = 'contactos' then
+    v_tipo := 'contacto'; v_id := NEW.id::text;
+  elsif TG_TABLE_NAME = 'presupuestos_publicos' and TG_OP = 'UPDATE' then
+    if NEW.estado is distinct from OLD.estado and NEW.estado in ('aceptado', 'rechazado') then
+      v_tipo := 'presupuesto'; v_id := NEW.token::text;
+    elsif NEW.visto is not null and OLD.visto is null then
+      v_tipo := 'visto'; v_id := NEW.token::text;
+    end if;
+  end if;
+  if v_tipo is null then return NEW; end if;
+  begin
+    execute format(
+      'select net.http_post(url := %L, headers := %L::jsonb, body := %L::jsonb)',
+      v_url,
+      jsonb_build_object('Content-Type', 'application/json', 'apikey', v_key)::text,
+      jsonb_build_object('tipo', v_tipo, 'id', v_id)::text
+    );
+  exception when others then
+    null;
+  end;
+  return NEW;
+end $$;
+
+drop trigger if exists avisar_contacto on public.contactos;
+create trigger avisar_contacto after insert on public.contactos
+  for each row execute function public.disparar_aviso();
+drop trigger if exists avisar_presupuesto on public.presupuestos_publicos;
+create trigger avisar_presupuesto after update on public.presupuestos_publicos
+  for each row execute function public.disparar_aviso();
+
+revoke all on function public.guardar_dispositivo(text, text), public.quitar_dispositivo(text),
+  public.mis_avisos(), public.guardar_avisos(boolean, boolean, boolean), public.disparar_aviso() from public, anon;
+grant execute on function public.guardar_dispositivo(text, text), public.quitar_dispositivo(text),
+  public.mis_avisos(), public.guardar_avisos(boolean, boolean, boolean) to authenticated;
+revoke all on function public.enviar_contacto(uuid, text, text, text, text, text, text, text) from public;
+grant execute on function public.enviar_contacto(uuid, text, text, text, text, text, text, text) to anon, authenticated;
+
+-- =====================================================================
 -- CÓMO ACTIVAR A UNA EMPRESA QUE HA PAGADO (hasta que el cobro sea automático)
 --   update public.empresas set pagado_hasta = now() + interval '1 year' where nombre = 'Nombre de la empresa';
 -- =====================================================================

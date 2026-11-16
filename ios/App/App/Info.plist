@@ -47,6 +47,10 @@
 	<string>Borna usa la cámara para fotografiar instalaciones y adjuntarlas a un cliente o un plano.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Borna accede a tus fotos para adjuntarlas a un cliente, un parte o un plano.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

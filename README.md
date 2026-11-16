@@ -91,6 +91,19 @@ npx cap sync
 Apple y Google revisan a mano: no es un envío automático desde aquí. La app funciona sin conexión con lo último
 que se guardó en el móvil, que es lo que piden para no ser solo un acceso directo a la web.
 
-## Pendiente
+## Notificaciones
 
-- Avisos al móvil (desactivados con `avisos: false` en `config.js`).
+En la app del móvil, **Avisos al móvil → Activar**. Llegan aunque la app esté cerrada: contacto nuevo de la web,
+presupuesto aceptado o rechazado, y (si lo enciendes) cuando el cliente abre el presupuesto.
+
+Hace falta, una sola vez, además del SQL:
+
+1. Vuelve a ejecutar `supabase.sql`.
+2. Crea la función de Supabase `avisos` con `supabase/functions/avisos/index.ts` y **Verify JWT desactivado**.
+3. **Android.** En [Firebase](https://console.firebase.google.com) crea un proyecto, añade una app Android con el
+   paquete `group.almara.borna` y descarga `google-services.json` dentro de `android/app/`. En el mismo proyecto,
+   cuenta de servicio con permiso de mensajería: su JSON va al secreto `FIREBASE_SERVICE_ACCOUNT` (el archivo entero, en una línea).
+4. **iPhone.** En Apple Developer, clave APNs (`.p8`). En los secretos de la función: `APNS_KEY` (el texto del archivo),
+   `APNS_KEY_ID` y `APNS_TEAM_ID`. En Xcode, el target App tiene que tener la capacidad **Push Notifications**.
+
+Sin esos secretos el móvil se registra, pero el aviso no puede salir. El botón «Enviar aviso de prueba» lo dice.
