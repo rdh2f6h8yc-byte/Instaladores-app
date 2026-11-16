@@ -357,22 +357,43 @@ begin
   return 'ok';
 end $$;
 
--- El invitado entra en la empresa solo si pulsa Aceptar
+-- El invitado entra en la empresa. Si esa empresa aún no tiene administrador, entra como tal.
+create or replace function public.aceptar_por_email(p_user uuid, p_email text) returns text
+language plpgsql security definer set search_path = public as $$
+declare i public.invitaciones; v_admin boolean; v_rol text; v_serie text;
+begin
+  if p_user is null or p_email is null then return 'sin_confirmar'; end if;
+  if exists (select 1 from public.equipo where user_id = p_user) then return 'ya_tienes'; end if;
+  select * into i from public.invitaciones where email = lower(p_email);
+  if not found then return 'sin_invitacion'; end if;
+  select exists (select 1 from public.equipo where empresa_id = i.empresa_id and rol = 'admin') into v_admin;
+  v_rol := case when v_admin then 'tecnico' else 'admin' end;
+  v_serie := case when v_admin then i.serie else '' end;
+  insert into public.equipo (user_id, empresa_id, email, nombre, rol, serie)
+    values (p_user, i.empresa_id, lower(p_email), i.nombre, v_rol, v_serie);
+  delete from public.invitaciones where email = lower(p_email);
+  return 'ok';
+end $$;
+
 create or replace function public.aceptar_invitacion() returns text
 language plpgsql security definer set search_path = public as $$
-declare i public.invitaciones; v_email text;
+declare v_email text;
 begin
   if auth.uid() is null then raise exception 'Sin sesión'; end if;
-  if exists (select 1 from public.equipo where user_id = auth.uid()) then return 'ya_tienes'; end if;
   select lower(u.email) into v_email from auth.users u
    where u.id = auth.uid() and u.email_confirmed_at is not null;
   if v_email is null then return 'sin_confirmar'; end if;
-  select * into i from public.invitaciones where email = v_email;
-  if not found then return 'sin_invitacion'; end if;
-  insert into public.equipo (user_id, empresa_id, email, nombre, rol, serie)
-    values (auth.uid(), i.empresa_id, v_email, i.nombre, 'tecnico', i.serie);
-  delete from public.invitaciones where email = v_email;
-  return 'ok';
+  return public.aceptar_por_email(auth.uid(), v_email);
+end $$;
+
+-- Al confirmar el correo, si hay invitación, entra solo: no tiene que pulsar Aceptar
+create or replace function public.al_confirmar_correo() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if NEW.email_confirmed_at is not null and OLD.email_confirmed_at is null then
+    perform public.aceptar_por_email(NEW.id, lower(NEW.email));
+  end if;
+  return NEW;
 end $$;
 
 create or replace function public.rechazar_invitacion() returns text
@@ -621,6 +642,47 @@ grant execute on function public.guardar_dispositivo(text, text), public.quitar_
   public.mis_avisos(), public.guardar_avisos(boolean, boolean, boolean) to authenticated;
 revoke all on function public.enviar_contacto(uuid, text, text, text, text, text, text, text) from public;
 grant execute on function public.enviar_contacto(uuid, text, text, text, text, text, text, text) to anon, authenticated;
+revoke all on function public.aceptar_por_email(uuid, text), public.al_confirmar_correo() from public, anon, authenticated;
+
+drop trigger if exists vincular_al_confirmar on auth.users;
+create trigger vincular_al_confirmar
+  after update of email_confirmed_at on auth.users
+  for each row execute function public.al_confirmar_correo();
+
+-- WIFITO SOLUTIONS SLU entra sin pagar. Al confirmar info.wifito@gmail.com queda dentro.
+do $$
+declare v_id uuid; v_hay_admin boolean;
+begin
+  select id into v_id from public.empresas
+   where lower(btrim(nombre)) = 'wifito solutions slu'
+   order by creado limit 1;
+  if v_id is null then
+    insert into public.empresas (nombre, pagado_hasta)
+    values ('WIFITO SOLUTIONS SLU', now() + interval '10 years')
+    returning id into v_id;
+  else
+    update public.empresas
+       set pagado_hasta = greatest(coalesce(pagado_hasta, now()), now() + interval '10 years')
+     where id = v_id;
+  end if;
+  select exists (select 1 from public.equipo where empresa_id = v_id and rol = 'admin') into v_hay_admin;
+  insert into public.equipo (user_id, empresa_id, email, nombre, rol, serie)
+  select u.id, v_id, lower(u.email), 'Wifito',
+         case when v_hay_admin then 'tecnico' else 'admin' end,
+         case when v_hay_admin then 'W' else '' end
+    from auth.users u
+   where lower(u.email) = 'info.wifito@gmail.com' and u.email_confirmed_at is not null
+     and not exists (select 1 from public.equipo q where q.user_id = u.id);
+  if exists (select 1 from public.equipo q join auth.users u on u.id = q.user_id
+              where lower(u.email) = 'info.wifito@gmail.com') then
+    delete from public.invitaciones where email = 'info.wifito@gmail.com';
+  else
+    insert into public.invitaciones (email, empresa_id, nombre, serie)
+    values ('info.wifito@gmail.com', v_id, 'Wifito', 'W')
+    on conflict (email) do update
+      set empresa_id = excluded.empresa_id, nombre = excluded.nombre, serie = excluded.serie;
+  end if;
+end $$;
 
 -- La prueba pasa a 7 días. Las empresas que siguen en la prueba automática de 30 (y no han pagado)
 -- se acortan a 7 días desde el alta. Quien ya tenga un pago o una fecha puesta a mano no se toca.

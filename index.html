@@ -193,7 +193,9 @@ function verAcceso(alta,txt){$("acceso").style.display="flex";$("inicio").style.
   $("fAcceso").hidden=!!alta;$("fAlta").hidden=!alta;if(txt)$("altaTxt").textContent=txt;pintarModo()}
 // Con sesión pero sin empresa: hay que darla de alta (o esperar a que te añadan) antes de entrar
 function sinAcceso(){if(Nube.deBaja()){verAcceso(true,"Tu empresa te ha dado de baja en la app. Si es un error, habla con tu administrador.");$("fAlta").querySelectorAll("label,input,#bAlta,#fInvita").forEach(e=>e.hidden=true);return true}
-  if(Nube.sinEmpresa()){verAcceso(true);pintarInvitacion();return true}return false}
+  if(Nube.sinEmpresa()){verAcceso(true);pintarInvitacion();
+    if((Nube.perfil()||{}).invitacion&&!sinAcceso.hecho){sinAcceso.hecho=true;$("bAceptarInv").click()}
+    return true}return false}
 function pintarInvitacion(){const inv=(Nube.perfil()||{}).invitacion,box=$("fInvita");
   if(inv&&inv.empresa){box.hidden=false;$("altaTxt").textContent=inv.empresa+" te ha invitado como técnico"+(inv.nombre?" ("+inv.nombre+")":"")+". Acepta para entrar en su equipo, o crea tu propia empresa.";$("bAlta").textContent="Crear mi propia empresa"}
   else{box.hidden=true;$("altaTxt").textContent="Último paso: da de alta tu empresa. Tendrás 7 días de prueba con todo incluido.";$("bAlta").textContent="Crear mi empresa"}}
