@@ -111,7 +111,7 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
     <button type="button" id="bModo" style="display:block;width:100%;margin-top:14px;background:none;color:#CFE0F5;font-size:14.5px;font-weight:700;padding:10px">¿Tu empresa aún no tiene cuenta? Crear cuenta gratis</button>
   </form>
   <form id="fAlta" autocomplete="off" hidden>
-    <p id="altaTxt" style="color:#CFE0F5;font-size:14.5px;line-height:1.45;margin:0 0 14px">Último paso: da de alta tu empresa. Tendrás 30 días de prueba con todo incluido.</p>
+    <p id="altaTxt" style="color:#CFE0F5;font-size:14.5px;line-height:1.45;margin:0 0 14px">Último paso: da de alta tu empresa. Tendrás 7 días de prueba con todo incluido.</p>
     <label for="aEmp">Nombre de tu empresa</label>
     <input id="aEmp" maxlength="120" autocomplete="organization" required>
     <label for="aNom">Tu nombre</label>
@@ -196,7 +196,7 @@ function sinAcceso(){if(Nube.deBaja()){verAcceso(true,"Tu empresa te ha dado de 
   if(Nube.sinEmpresa()){verAcceso(true);pintarInvitacion();return true}return false}
 function pintarInvitacion(){const inv=(Nube.perfil()||{}).invitacion,box=$("fInvita");
   if(inv&&inv.empresa){box.hidden=false;$("altaTxt").textContent=inv.empresa+" te ha invitado como técnico"+(inv.nombre?" ("+inv.nombre+")":"")+". Acepta para entrar en su equipo, o crea tu propia empresa.";$("bAlta").textContent="Crear mi propia empresa"}
-  else{box.hidden=true;$("altaTxt").textContent="Último paso: da de alta tu empresa. Tendrás 30 días de prueba con todo incluido.";$("bAlta").textContent="Crear mi empresa"}}
+  else{box.hidden=true;$("altaTxt").textContent="Último paso: da de alta tu empresa. Tendrás 7 días de prueba con todo incluido.";$("bAlta").textContent="Crear mi empresa"}}
 function mostrar(){
   if(!dentro()){verAcceso(false);return}
   if(Nube.configurado()&&sinAcceso())return;
@@ -226,7 +226,7 @@ function pintarInicio(){
   $("saludo").textContent=vc?"Datos de "+vc.nombre:(h<13?"Buenos días":h<21?"Buenas tardes":"Buenas noches")+(pf.nombre?", "+pf.nombre:"");
   $("empNom").textContent=pf.empresa||PRODUCTO;$("bForm").hidden=!adm||!Nube.configurado()||!pf.empresa_id;$("bAvisos").hidden=!Nube.configurado();
   const dp=Nube.diasPrueba();$("avisoPlan").innerHTML=!Nube.activa()?`<div class="estadoAv" style="background:#FDECEC;margin-top:14px"><b>Tu periodo de prueba ha terminado.</b> Puedes ver tus datos, pero no se guardan cambios nuevos.${adm?" Escríbenos para activar la suscripción"+(CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":"")+".":" Avisa a tu administrador."}</div>`
-    :dp!==null&&dp<=10?`<div class="estadoAv" style="background:#FFF8EC;margin-top:14px">Te queda${dp===1?"":"n"} <b>${Math.max(dp,0)} día${dp===1?"":"s"}</b> de prueba.${adm&&CFG.soporte?" Para seguir después, escríbenos: <b>"+esc(CFG.soporte)+"</b>":""}</div>`:"";
+    :dp!==null&&dp<=2?`<div class="estadoAv" style="background:#FFF8EC;margin-top:14px">Te queda${dp===1?"":"n"} <b>${Math.max(dp,0)} día${dp===1?"":"s"}</b> de prueba.${adm&&CFG.soporte?" Para seguir después, escríbenos: <b>"+esc(CFG.soporte)+"</b>":""}</div>`:"";
   $("tCon").hidden=$("tEst").hidden=!adm;$("bEquipo").hidden=!adm||!Nube.configurado();
   const cl=(lee("almara-clientes-v1")||{}).clientes||[],pl=(lee("almara-planos-v1")||{}).proy||[],pr=(lee("almara-pres-v1")||{}).lista||[];
   if(cl.length)$("nCli").textContent=cl.length+" cliente"+(cl.length>1?"s":"");

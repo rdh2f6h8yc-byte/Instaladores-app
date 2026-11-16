@@ -15,7 +15,7 @@ Cada empresa se da de alta sola, tiene sus propios datos y su propio equipo de t
 
 ## Cómo funciona
 
-- **Alta**: quien pulsa «Crear cuenta» y da de alta su empresa es su administrador. Empieza con 30 días de prueba.
+- **Alta**: quien pulsa «Crear cuenta» y da de alta su empresa es su administrador. Empieza con 7 días de prueba.
 - **Equipo**: el administrador invita a un compañero con su correo. Esa persona crea la cuenta (o entra, si ya la tiene) y acepta la invitación. Hasta entonces no ve nada de la empresa.
 - **Permisos** (los impone la base de datos): cada técnico ve solo lo suyo; el administrador ve lo de su equipo;
   nadie ve nada de otra empresa.

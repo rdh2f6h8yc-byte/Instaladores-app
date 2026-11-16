@@ -9,8 +9,8 @@ create table if not exists public.empresas (
   id uuid primary key default gen_random_uuid(),
   nombre text not null check (char_length(nombre) between 1 and 120),
   creado timestamptz not null default now(),
-  -- Acceso: 30 días de prueba; después hace falta pagado_hasta en el futuro
-  prueba_hasta timestamptz not null default now() + interval '30 days',
+  -- Acceso: 7 días de prueba; después hace falta pagado_hasta en el futuro
+  prueba_hasta timestamptz not null default now() + interval '7 days',
   pagado_hasta timestamptz
 );
 
@@ -621,6 +621,14 @@ grant execute on function public.guardar_dispositivo(text, text), public.quitar_
   public.mis_avisos(), public.guardar_avisos(boolean, boolean, boolean) to authenticated;
 revoke all on function public.enviar_contacto(uuid, text, text, text, text, text, text, text) from public;
 grant execute on function public.enviar_contacto(uuid, text, text, text, text, text, text, text) to anon, authenticated;
+
+-- La prueba pasa a 7 días. Las empresas que siguen en la prueba automática de 30 (y no han pagado)
+-- se acortan a 7 días desde el alta. Quien ya tenga un pago o una fecha puesta a mano no se toca.
+alter table public.empresas alter column prueba_hasta set default (now() + interval '7 days');
+update public.empresas
+   set prueba_hasta = creado + interval '7 days'
+ where pagado_hasta is null
+   and prueba_hasta between creado + interval '20 days' and creado + interval '31 days';
 
 -- =====================================================================
 -- CÓMO ACTIVAR A UNA EMPRESA QUE HA PAGADO (hasta que el cobro sea automático)
