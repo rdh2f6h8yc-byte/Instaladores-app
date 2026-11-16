@@ -264,7 +264,7 @@ $("fAcceso").onsubmit=async e=>{e.preventDefault();$("error").textContent="";con
       if(r&&r.confirmar){modoAlta=false;$("pass").value="";$("error").style.color="#BFEBCB";$("error").textContent="Te hemos enviado un correo. Pulsa el enlace para confirmar tu cuenta y después entra aquí.";b.disabled=false;pintarModo();return}}
     else await Nube.entrar(mail,pw);
     $("pass").value="";mostrar()}
-  catch(err){const m=String(err.message||err);$("error").style.color="";$("error").textContent=/already|registered|exists/i.test(m)?"Ya hay una cuenta con ese correo. Pulsa «Ya tengo cuenta».":/invalid/i.test(m)?"Correo o contraseña incorrectos":/abort|fetch|network/i.test(m)?"Sin conexión. Inténtalo de nuevo.":/confirm/i.test(m)?"Falta confirmar tu correo: pulsa el enlace que te enviamos al registrarte.":/password/i.test(m)?"La contraseña es demasiado corta o sencilla.":m}
+  catch(err){const m=String(err.message||err);$("error").style.color="";$("error").textContent=/rate limit/i.test(m)?"Se han pedido demasiados correos de confirmación. Espera una hora y pulsa una sola vez.":/already|registered|exists/i.test(m)?"Ya hay una cuenta con ese correo. Pulsa «Ya tengo cuenta».":/invalid/i.test(m)?"Correo o contraseña incorrectos":/abort|fetch|network/i.test(m)?"Sin conexión. Inténtalo de nuevo.":/confirm/i.test(m)?"Falta confirmar tu correo: pulsa el enlace que te enviamos al registrarte.":/password/i.test(m)?"La contraseña es demasiado corta o sencilla.":m}
   b.disabled=false;pintarModo()};
 $("bModo").onclick=()=>{modoAlta=!modoAlta;$("error").textContent="";pintarModo()};
 $("fAlta").onsubmit=async e=>{e.preventDefault();const b=$("bAlta"),er=$("errorAlta");er.textContent="";b.disabled=true;b.textContent="Creando…";
