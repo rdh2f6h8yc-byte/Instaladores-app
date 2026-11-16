@@ -108,7 +108,8 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
     <div class="ver"><input id="pass" type="password" autocomplete="current-password" required><button type="button" id="verPass">Ver</button></div>
     <button class="entrar" id="bEntrar" type="submit">Entrar</button>
     <div class="error" id="error"></div>
-    <button type="button" id="bModo" style="display:block;width:100%;margin-top:14px;background:none;color:#CFE0F5;font-size:14.5px;font-weight:700;padding:10px">¿Tu empresa aún no tiene cuenta? Crear cuenta gratis</button>
+    <button type="button" id="bOlvido" style="display:block;width:100%;margin-top:6px;background:none;color:#9FB4CF;font-size:14px;font-weight:700;padding:8px">He olvidado la contraseña</button>
+    <button type="button" id="bModo" style="display:block;width:100%;margin-top:4px;background:none;color:#CFE0F5;font-size:14.5px;font-weight:700;padding:10px">¿Tu empresa aún no tiene cuenta? Crear cuenta gratis</button>
   </form>
   <form id="fAlta" autocomplete="off" hidden>
     <p id="altaTxt" style="color:#CFE0F5;font-size:14.5px;line-height:1.45;margin:0 0 14px">Último paso: da de alta tu empresa. Tendrás 7 días de prueba con todo incluido.</p>
@@ -125,6 +126,15 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
     <p style="color:#9FB4CF;font-size:13px;line-height:1.45;margin:14px 0 0">¿Trabajas para una empresa que ya usa la app? Pídele a tu jefe que te añada con este mismo correo desde <b>Equipo</b> y vuelve a entrar.</p>
     <button type="button" id="bBorrarAlta" style="display:block;width:100%;margin-top:2px;background:none;color:#9FB4CF;font-size:13px;font-weight:600;padding:8px;text-decoration:underline">Eliminar mi cuenta</button>
     <button type="button" id="bSalirAlta" style="display:block;width:100%;margin-top:8px;background:none;color:#CFE0F5;font-size:14px;font-weight:700;padding:10px">Cerrar sesión</button>
+  </form>
+  <form id="fClave" hidden>
+    <p style="color:#CFE0F5;font-size:14.5px;line-height:1.45;margin:0 0 14px">Elige una contraseña nueva. A partir de ahora entrarás con esta.</p>
+    <label for="clave1">Nueva contraseña</label>
+    <input id="clave1" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="clave2">Repítela</label>
+    <input id="clave2" type="password" autocomplete="new-password" minlength="8" required>
+    <button class="entrar" id="bClave" type="submit">Guardar contraseña</button>
+    <div class="error" id="errorClave"></div>
   </form>
   <div class="pie">La app de las empresas instaladoras · <a href="/privacidad/" style="color:#9FB4CF">Privacidad</a></div>
 </section>
@@ -266,7 +276,20 @@ $("fAcceso").onsubmit=async e=>{e.preventDefault();$("error").textContent="";con
     $("pass").value="";mostrar()}
   catch(err){const m=String(err.message||err);$("error").style.color="";$("error").textContent=/rate limit/i.test(m)?"Se han pedido demasiados correos de confirmación. Espera una hora y pulsa una sola vez.":/already|registered|exists/i.test(m)?"Ya hay una cuenta con ese correo. Pulsa «Ya tengo cuenta».":/invalid/i.test(m)?"Correo o contraseña incorrectos":/abort|fetch|network/i.test(m)?"Sin conexión. Inténtalo de nuevo.":/confirm/i.test(m)?"Falta confirmar tu correo: pulsa el enlace que te enviamos al registrarte.":/password/i.test(m)?"La contraseña es demasiado corta o sencilla.":m}
   b.disabled=false;pintarModo()};
-$("bModo").onclick=()=>{modoAlta=!modoAlta;$("error").textContent="";pintarModo()};
+$("bModo").onclick=()=>{modoAlta=!modoAlta;$("error").textContent="";$("error").style.color="";pintarModo()};
+$("bOlvido").onclick=async()=>{const er=$("error"),mail=$("email").value.trim();er.style.color="";
+  if(!mail){er.textContent="Escribe tu correo arriba y vuelve a pulsar «He olvidado la contraseña».";return}
+  $("bOlvido").disabled=true;
+  try{await Nube.recuperar(mail);er.style.color="#BFEBCB";er.textContent="Te hemos enviado un correo. Ábrelo y pulsa el enlace para elegir una contraseña nueva."}
+  catch(err){const m=String(err.message||err);er.textContent=/rate limit/i.test(m)?"Se han pedido demasiados correos. Espera una hora y pulsa una sola vez.":"No se ha podido enviar: "+m}
+  $("bOlvido").disabled=false};
+$("fClave").onsubmit=async e=>{e.preventDefault();const er=$("errorClave"),a=$("clave1").value,b=$("clave2").value;er.style.color="";er.textContent="";
+  if(a.length<8){er.textContent="La contraseña tiene que tener al menos 8 caracteres.";return}
+  if(a!==b){er.textContent="Las dos contraseñas no coinciden.";return}
+  $("bClave").disabled=true;
+  try{await Nube.nuevaClave(a);$("fClave").hidden=true;$("clave1").value="";$("clave2").value="";mostrar()}
+  catch(err){er.textContent="No se ha podido guardar: "+(err.message||err)}
+  $("bClave").disabled=false};
 $("fAlta").onsubmit=async e=>{e.preventDefault();const b=$("bAlta"),er=$("errorAlta");er.textContent="";b.disabled=true;b.textContent="Creando…";
   try{const r=await Nube.crearEmpresa($("aEmp").value.trim(),$("aNom").value.trim());
     if(r==="ok"){mostrar()}else er.textContent={falta_empresa:"Pon el nombre de tu empresa.",falta_nombre:"Pon tu nombre."}[r]||r}
@@ -279,6 +302,9 @@ $("bAceptarInv").onclick=async()=>{const b=$("bAceptarInv"),er=$("errorAlta");er
   catch(err){er.textContent=/abort|fetch|network|conexi/i.test(String(err.message))?"Sin conexión. Inténtalo de nuevo.":"No se ha podido aceptar: "+err.message}
   b.disabled=false;b.textContent="Aceptar y entrar en la empresa"};
 const cerrar=async()=>{if(window.PushBorna)await PushBorna.soltar().catch(()=>{});Nube.salir();localStorage.removeItem(LOCAL);localStorage.removeItem("almara-perfil");location.replace("/")};
+function textoBorrado(e){const m=String(e&&e.message||e||"");
+  if(/42501|storage tables|Direct deletion/i.test(m))return "No se ha podido eliminar porque falta actualizar Supabase. En el SQL Editor, ejecuta otra vez la función eliminar_cuenta.";
+  return "No se ha podido eliminar: "+m}
 $("bSalirAlta").onclick=cerrar;
 $("bSalir").onclick=cerrar;
 // ---------- Cuenta, suscripción y eliminar la cuenta ----------
@@ -310,7 +336,7 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
     if(!navigator.onLine){res.textContent="Necesitas conexión para eliminar la cuenta.";return}
     $("ctBorrar").disabled=true;$("ctBorrar").textContent="Eliminando…";
     try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}res.textContent=r==="solo_admin"?"Solo el administrador puede eliminar la empresa.":"No se ha podido eliminar: "+r}
-    catch(e){res.textContent="No se ha podido eliminar: "+e.message}
+    catch(e){res.textContent=textoBorrado(e)}
     $("ctBorrar").disabled=false;$("ctBorrar").textContent="Eliminar la cuenta y la empresa"}}
   if($("ctPortal"))$("ctPortal").onclick=async()=>{const res=$("ctPortalRes");res.textContent="Abriendo Stripe…";$("ctPortal").disabled=true;
     try{location.href=await Nube.abrirPortal()}
@@ -318,7 +344,7 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
 $("bCuenta").onclick=()=>{pintarCuenta();$("vCuenta").classList.add("on");Nube.cargarPerfil().then(pintarCuenta).catch(()=>{})};
 $("vCuenta").addEventListener("click",e=>{if(e.target===$("vCuenta")||e.target.closest("[data-cerrar]"))$("vCuenta").classList.remove("on")});
 $("bBorrarAlta").onclick=async()=>{if(!confirm("¿Eliminar tu cuenta para siempre? No se puede deshacer."))return;
-  try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}$("errorAlta").textContent="No se ha podido eliminar: "+r}catch(e){$("errorAlta").textContent="No se ha podido eliminar: "+e.message}};
+  try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}$("errorAlta").textContent="No se ha podido eliminar: "+r}catch(e){$("errorAlta").textContent=textoBorrado(e)}};
 // ---------- Formulario público de contacto (solo administrador) ----------
 $("buscaIni").addEventListener("input",buscarIni);
 $("bForm").onclick=()=>{localStorage.setItem("almara-vio-form","1");const pf=Nube.perfil()||{},url=Nube.webUrl()+"/c/?e="+encodeURIComponent(pf.empresa_id||"");
@@ -401,9 +427,14 @@ async function pintarEquipo(){const c=$("eqCuerpo");c.innerHTML=`<p style="color
     catch(e){res.style.color="var(--rojo)";res.textContent="No se ha podido añadir: "+e.message}}}
 $("bEquipo").onclick=()=>{$("vEquipo").classList.add("on");pintarEquipo()};
 $("vEquipo").addEventListener("click",e=>{if(e.target===$("vEquipo")||e.target.closest("[data-cerrar]"))$("vEquipo").classList.remove("on")});
-mostrar();
+const conEnlace=/access_token=/.test(location.hash);
+if(!conEnlace)mostrar();
 if(window.PushBorna)PushBorna.alEntrar();
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("/sw.js").catch(()=>{});
+if(conEnlace)Nube.aplicarEnlace().then(tipo=>{
+  if(tipo==="recovery"){verAcceso(false);$("fAcceso").hidden=true;$("fAlta").hidden=true;$("fClave").hidden=false;return}
+  mostrar();
+}).catch(()=>mostrar());
 </script>
 </body>
 </html>

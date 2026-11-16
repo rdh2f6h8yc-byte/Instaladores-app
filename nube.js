@@ -83,12 +83,50 @@ window.Nube = (() => {
     return Math.ceil((Date.parse(p.prueba_hasta) - Date.now()) / 864e5); };
   // Alta de cuenta nueva. Devuelve {confirmar:true} si Supabase pide confirmar el correo antes de entrar.
   async function registrar(email, password) {
-    const r = await pedir("/auth/v1/signup", { method: "POST",
+    const destino = encodeURIComponent(webUrl() + "/");
+    const r = await pedir("/auth/v1/signup?redirect_to=" + destino, { method: "POST",
       headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error_description || j.msg || j.error || ("Error " + r.status));
     if (!j.access_token) return { confirmar: true };
     return entrar(email, password);
+  }
+  // Correo para elegir una contraseña nueva. Supabase responde igual si el correo no existe.
+  async function recuperar(email) {
+    const destino = encodeURIComponent(webUrl() + "/");
+    const r = await pedir("/auth/v1/recover?redirect_to=" + destino, { method: "POST",
+      headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error_description || j.msg || j.error || ("Error " + r.status));
+    return true;
+  }
+  // El enlace del correo trae la sesión en el hash (#access_token…). La guarda y dice si es un cambio de clave.
+  async function aplicarEnlace() {
+    const h = new URLSearchParams(String(location.hash || "").replace(/^#/, ""));
+    const at = h.get("access_token"), rt = h.get("refresh_token");
+    if (!at || !rt) return "";
+    const tipo = h.get("type") || "";
+    const exp = Number(h.get("expires_in")) || 3600;
+    history.replaceState(null, "", location.pathname + location.search);
+    const r = await pedir("/auth/v1/user", { headers: { apikey: KEY, Authorization: "Bearer " + at } });
+    if (!r.ok) return "";
+    const u = await r.json();
+    const dueno = localStorage.getItem("almara-dueno");
+    if (dueno && dueno !== u.id) {
+      for (const k of DATOS) localStorage.removeItem(k);
+      for (const k of ["almara-empresa-v1", "almara-tarifas-v1", "almara-contactos-cache", "almara-perfil", "almara-ts-empresa"]) localStorage.removeItem(k);
+    }
+    localStorage.setItem("almara-dueno", u.id);
+    setSesion({ access_token: at, refresh_token: rt, expires_at: Date.now() / 1000 + exp, user: { id: u.id, email: u.email } });
+    return tipo === "recovery" ? "recovery" : "sesion";
+  }
+  async function nuevaClave(password) {
+    const r = await pedir("/auth/v1/user", { method: "PUT", headers: await cab({ "Content-Type": "application/json" }), body: JSON.stringify({ password }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error_description || j.msg || j.error || ("Error " + r.status));
+    if (j.email) { const s = sesion(); if (s) { s.user.email = j.email; setSesion(s); } }
+    await cargarPerfil().catch(() => {});
+    return true;
   }
   // Da de alta la empresa de quien ha entrado (pasa a ser su administrador)
   async function crearEmpresa(empresa, nombre) {
@@ -139,10 +177,11 @@ window.Nube = (() => {
         for (let i = 0; i < 30; i++) {
           const r = await pedir("/storage/v1/object/list/fotos", { method: "POST", headers: await cab({ "Content-Type": "application/json" }),
             body: JSON.stringify({ prefix: c, limit: 1000 }) });
-          const L = r.ok ? (await r.json()).filter(o => o && o.name) : [];
+          const L = r.ok ? (await r.json()).filter(o => o && o.name && o.id) : [];
           if (!L.length) break;
+          const rutas = L.map(o => String(o.name).startsWith(c + "/") ? o.name : c + "/" + o.name);
           await pedir("/storage/v1/object/fotos", { method: "DELETE", headers: await cab({ "Content-Type": "application/json" }),
-            body: JSON.stringify({ prefixes: L.map(o => c + "/" + o.name) }) });
+            body: JSON.stringify({ prefixes: rutas }) });
           if (L.length < 1000) break;
         }
       } catch (e) {}
@@ -320,7 +359,7 @@ window.Nube = (() => {
     if (!r.ok) throw new Error(j.error || ("HTTP " + r.status));
     return j;
   }
-  return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, crearEmpresa, eliminarCuenta, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
+  return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, recuperar, aplicarEnlace, nuevaClave, crearEmpresa, eliminarCuenta, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
     api, rpcPublica, abrirPortal, avisar, webUrl, waNum, srcImagen, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
     clientes, estado: () => est, CLAVES };
 })();
