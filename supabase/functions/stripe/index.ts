@@ -79,12 +79,25 @@ async function manejar(req) {
   const rs = await fetch("https://api.stripe.com/v1/subscriptions/" + encodeURIComponent(suscripcion), {
     headers: { Authorization: "Bearer " + (Deno.env.get("STRIPE_SECRET_KEY") || "") },
   });
-  if (!rs.ok) return json({ error: "Stripe no responde: " + rs.status }, 500);
-  const s = await rs.json();
+  let s: Record<string, unknown> = {};
+  if (rs.status === 404) {
+    s = { status: "canceled", ended_at: Math.floor(Date.now() / 1000) };
+  } else if (!rs.ok) {
+    return json({ error: "Stripe no responde: " + rs.status }, 500);
+  } else {
+    s = await rs.json();
+  }
   let fin = typeof s.current_period_end === "number" ? s.current_period_end : 0;
-  for (const it of (s.items && s.items.data) || []) if (typeof it.current_period_end === "number" && it.current_period_end > fin) fin = it.current_period_end;
-  const alCorriente = s.status === "active" || s.status === "trialing";
-  const hasta = alCorriente && fin ? new Date((fin + DIAS_DE_MARGEN * 86400) * 1000).toISOString() : null;
+  const items = (s.items as { data?: Array<{ current_period_end?: number }> } | undefined)?.data || [];
+  for (const it of items) if (typeof it.current_period_end === "number" && it.current_period_end > fin) fin = it.current_period_end;
+  const estado = typeof s.status === "string" ? s.status : "";
+  const alCorriente = estado === "active" || estado === "trialing";
+  let hasta: string | null = null;
+  if (alCorriente && fin) hasta = new Date((fin + DIAS_DE_MARGEN * 86400) * 1000).toISOString();
+  else if (estado === "canceled" || estado === "unpaid" || estado === "incomplete_expired") {
+    const ended = typeof s.ended_at === "number" ? s.ended_at : Math.floor(Date.now() / 1000);
+    hasta = new Date(ended * 1000).toISOString();
+  }
   cliente = cliente || id(s.customer);
 
   const k = claveSupabase();
@@ -92,12 +105,56 @@ async function manejar(req) {
   if (!k.startsWith("sb_")) cab.Authorization = "Bearer " + k;
   const rp = await fetch((Deno.env.get("SUPABASE_URL") || "") + "/rest/v1/rpc/registrar_pago", {
     method: "POST", headers: cab,
-    body: JSON.stringify({ p_empresa: empresa, p_cliente: cliente, p_suscripcion: suscripcion, p_hasta: hasta }),
+    body: JSON.stringify({ p_empresa: empresa, p_cliente: cliente, p_suscripcion: suscripcion, p_hasta: hasta, p_estado: estado || null }),
   });
   if (!rp.ok) return json({ error: "no se ha podido guardar: " + rp.status + " " + (await rp.text()).slice(0, 200) }, 500);
   const res = await rp.json();
-  console.log("stripe", ev.type, suscripcion, s.status, hasta, res);
+  console.log("stripe", ev.type, suscripcion, estado, hasta, res);
   return json({ ok: true, resultado: res, hasta });
 }
 
-Deno.serve(manejar);
+// Portal de cliente: lo abre el administrador ya identificado. No usa el enlace estático (estaba mal copiado).
+async function portal(req: Request) {
+  const cors = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json",
+  };
+  const salir = (o: unknown, estado = 200) => new Response(JSON.stringify(o), { status: estado, headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+  if (req.method !== "POST") return salir({ error: "solo POST" }, 405);
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.toLowerCase().startsWith("bearer ")) return salir({ error: "sin sesión" }, 401);
+  const supa = Deno.env.get("SUPABASE_URL") || "";
+  const apikey = req.headers.get("apikey") || Deno.env.get("SUPABASE_ANON_KEY") || "";
+  const cabU = { apikey, Authorization: auth, "Content-Type": "application/json" };
+  const ru = await fetch(supa + "/auth/v1/user", { headers: cabU });
+  if (!ru.ok) return salir({ error: "sesión no válida" }, 401);
+  const rp = await fetch(supa + "/rest/v1/rpc/mi_perfil", { method: "POST", headers: cabU, body: "{}" });
+  if (!rp.ok) return salir({ error: "no se ha podido leer el perfil" }, 401);
+  const perfil = await rp.json();
+  if (!perfil || perfil.rol !== "admin" || !perfil.empresa_id) return salir({ error: "solo el administrador" }, 403);
+  const re = await fetch(supa + "/rest/v1/empresas?select=stripe_cliente&id=eq." + perfil.empresa_id, { headers: cabU });
+  if (!re.ok) return salir({ error: "no se ha podido leer la empresa" }, 500);
+  const filas = await re.json();
+  const cliente = filas && filas[0] && filas[0].stripe_cliente;
+  if (!cliente) return salir({ error: "sin_pago" }, 409);
+  const vuelta = (Deno.env.get("APP_URL") || "https://instaladoresapp.vercel.app").replace(/\/+$/, "") + "/";
+  const rs = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + (Deno.env.get("STRIPE_SECRET_KEY") || ""),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ customer: cliente, return_url: vuelta }),
+  });
+  const s = await rs.json().catch(() => ({}));
+  if (!rs.ok || !s.url) return salir({ error: "Stripe no ha abierto el portal" }, 502);
+  return salir({ url: s.url });
+}
+
+Deno.serve((req) => {
+  if (new URL(req.url).searchParams.get("accion") === "portal") return portal(req);
+  return manejar(req);
+});

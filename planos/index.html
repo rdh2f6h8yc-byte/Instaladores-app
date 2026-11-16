@@ -188,6 +188,7 @@ nav button.on{color:#fff;background:rgba(255,255,255,.14)}
 <div id="print"></div>
 
 <script src="/config.js"></script>
+<script src="/comun.js"></script>
 <script src="/nube.js"></script>
 <script src="/pdf.js"></script>
 <script>
@@ -912,7 +913,7 @@ async function pdfPresupuesto(pr){
   pdf.txt(18,y,"Firma y fecha:",8.5,0,GR);const wf=pdf.txt(112,y,"Firma:",8.5,0,GR);
   const f=await firmaJPG().catch(()=>null);
   if(f){const esc=Math.min(15.5/f.h,53/f.w);pdf.imagen(f.jpg,f.w,f.h,112+wf+5,y+1,f.w*esc,f.h*esc)}
-  const en=pr.enlace;if(en&&en.estado==="aceptado"&&en.firma_png){const fc=await aJPG(en.firma_png,600,.9).catch(()=>null);
+  const en=pr.enlace;if(en&&en.estado==="aceptado"&&Nube.srcImagen(en.firma_png)){const fc=await aJPG(Nube.srcImagen(en.firma_png),600,.9).catch(()=>null);
     if(fc){const e2=Math.min(13/fc.h,45/fc.w);pdf.imagen(fc.jpg,fc.w,fc.h,18+26,y+1,fc.w*e2,fc.h*e2)}
     pdf.txt(18,y+22,`Aceptado online el ${new Date(en.respondido).toLocaleDateString("es-ES")} por ${en.firma_nombre||"el cliente"}${en.firma_dni?" (DNI "+en.firma_dni+")":""}`,7.5,0,GR)}
   pdf.linea(18,y+18,98,y+18,GR,.6);pdf.linea(112,y+18,192,y+18,GR,.6);
@@ -954,7 +955,7 @@ function pintarEnlace(){const el=$("enlaceBox");if(!el||!prCur)return;const e=pr
   let est=e.estado==="aceptado"?`<b style="color:#2E9D5B">✓ Aceptado</b> el ${f(e.respondido)} por ${esc(e.firma_nombre||"el cliente")}${e.firma_dni?" · DNI "+esc(e.firma_dni):""}${e.comentario?`<br><i>«${esc(e.comentario)}»</i>`:""}`
     :e.estado==="rechazado"?`<b style="color:#C62828">Rechazado</b> el ${f(e.respondido)}${e.comentario?`<br>Motivo: <i>«${esc(e.comentario)}»</i>`:""}`
     :`<b style="color:#1E88E5">Enviado</b> el ${f(e.enviado)} · ${e.visto?"visto el "+f(e.visto):"todavía no lo ha abierto"}`;
-  el.innerHTML=`<h3>Aceptación online</h3><div class="caja" style="font-size:14px;line-height:1.5">${est}${e.estado==="aceptado"&&e.firma_png?`<br><img src="${e.firma_png}" style="max-height:60px;margin-top:6px">`:""}
+  el.innerHTML=`<h3>Aceptación online</h3><div class="caja" style="font-size:14px;line-height:1.5">${est}${e.estado==="aceptado"&&Nube.srcImagen(e.firma_png)?`<br><img src="${Nube.srcImagen(e.firma_png)}" style="max-height:60px;margin-top:6px">`:""}
     <div class="g2 bots"><button class="pb" data-pa="copiarEnlace">Copiar enlace</button><button class="pb az" data-pa="enlace">${e.estado==="enviado"?"Actualizar y reenviar":"Enviar enlace nuevo"}</button></div></div>`}
 async function snapshotPres(pr){const k=calcular(pr),E=EMP;
   const adj=planosDe(pr).map(id=>db.proy.find(p=>p.id===id)).filter(Boolean),planos=[];
@@ -972,14 +973,14 @@ async function enviarEnlace(){const p=prCur;if(!Nube.sesion()){await avisar("Par
     await Nube.api("presupuestos_publicos?on_conflict=token",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({token,numero:p.numero,datos})});
     p.enlace={...(p.enlace||{}),token,estado:"enviado",enviado:new Date().toISOString()};guardarPres();pintarEnlace();aviso("")}
   catch(e){aviso("");await avisar("No se ha podido crear el enlace. Comprueba la conexión y que hayas ejecutado el segundo archivo SQL en Supabase.\n\n"+e.message);return}
-  const url=location.origin+"/p/?c="+token,nom=(p.cliente.contacto||p.cliente.nombre||"").split(" ")[0];
+  const url=Nube.webUrl()+"/p/?c="+token,nom=(p.cliente.contacto||p.cliente.nombre||"").split(" ")[0];
   const txt=`Hola${nom?" "+nom:""}, te envío el presupuesto ${p.numero} de ${EMP.marca}${p.titulo?" ("+p.titulo+")":""}. Puedes verlo y aceptarlo desde aquí:\n${url}`;
   try{if(navigator.share){await navigator.share({title:"Presupuesto "+p.numero,text:txt});return}}catch(e){if(e.name==="AbortError")return}
   try{await navigator.clipboard.writeText(txt);await avisar("Mensaje copiado. Pégalo en WhatsApp o en un correo para el cliente.")}catch(e){await pedir("Copia este mensaje para el cliente:",txt)}}
 async function refrescarEnlaces(){if(!Nube.sesion()||!PR.lista.some(p=>p.enlace))return;
   const rows=await Nube.api("presupuestos_publicos?select=token,estado,respondido,visto,firma_nombre,firma_dni,firma_png,comentario").catch(()=>null);if(!rows)return;
   let ch=false;for(const p of PR.lista){if(!p.enlace)continue;const r=rows.find(x=>x.token===p.enlace.token);if(!r)continue;
-    const n={...p.enlace,estado:r.estado,respondido:r.respondido,visto:r.visto,firma_nombre:r.firma_nombre,firma_dni:r.firma_dni,comentario:r.comentario,firma_png:r.estado==="aceptado"?r.firma_png:undefined};
+    const n={...p.enlace,estado:r.estado,respondido:r.respondido,visto:r.visto,firma_nombre:r.firma_nombre,firma_dni:r.firma_dni,comentario:r.comentario,firma_png:r.estado==="aceptado"?Nube.srcImagen(r.firma_png)||undefined:undefined};
     if(JSON.stringify(n)!==JSON.stringify(p.enlace)){p.enlace=n;ch=true}}
   if(ch){guardarPres();if(modo==="pres"){prCur?pintarEnlace():listaPres()}}}
 function listaPres(){prCur=null;const tot=p=>calcular(p).total;let h=`<div class="pcont">
@@ -1037,7 +1038,7 @@ $("pres").addEventListener("click",async e=>{
   if(a==="elegirCli"){elegirCliente();return}
   if(a==="todosPl"){verTodosPl=true;pintarPlanosAdj();return}
   if(a==="enlace"){enviarEnlace();return}
-  if(a==="copiarEnlace"){const u=location.origin+"/p/?c="+prCur.enlace.token;try{await navigator.clipboard.writeText(u);aviso("Enlace copiado",1500)}catch(e){await pedir("Copia el enlace:",u)}return}
+  if(a==="copiarEnlace"){const u=Nube.webUrl()+"/p/?c="+prCur.enlace.token;try{await navigator.clipboard.writeText(u);aviso("Enlace copiado",1500)}catch(e){await pedir("Copia el enlace:",u)}return}
   if(a==="nuevoPlano"){abrirImport(true);return}
   if(a==="volver"){listaPres();return}
   if(a==="ajustes"){abrirAjustes();return}

@@ -11,7 +11,9 @@ window.ALMARA_CONFIG = {
   precioAnual: "190 € al año (2 meses gratis)",
   pagoMensual: "https://buy.stripe.com/cNi3co02F0cN4EcaDc1wY00",  // enlace de pago de Stripe (Payment Link) de la suscripción mensual
   pagoAnual: "https://buy.stripe.com/28E7sEcPrf7HgmU5iS1wY01",    // enlace de pago de Stripe de la suscripción anual
-  portal: "https://billing.stripe.com/p/login/cNi3co02F0cN4EcaDc1wY00",   // enlace del portal de cliente de Stripe (cambiar tarjeta, facturas, cancelar)
+  // Dirección pública. Los enlaces que se envían a clientes (presupuesto, contacto) salen de aquí,
+  // también cuando la app está instalada desde la tienda.
+  webUrl: "https://instaladoresapp.vercel.app",
   supabaseUrl: "https://arhczbzfrukzugwxmfri.supabase.co",
   supabaseAnonKey: "sb_publishable_mfH8pMp6z9zSlCBySj6XIw_ZyluI17O",
   // Avisos al móvil: desactivados hasta montar el envío en el proyecto nuevo

@@ -116,13 +116,17 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
     <input id="aEmp" maxlength="120" autocomplete="organization" required>
     <label for="aNom">Tu nombre</label>
     <input id="aNom" maxlength="80" autocomplete="given-name" required>
+    <div id="fInvita" hidden style="margin:0 0 12px">
+      <button type="button" class="entrar" id="bAceptarInv">Aceptar y entrar en la empresa</button>
+      <p style="color:#9FB4CF;font-size:13px;line-height:1.45;margin:10px 0 0">Si prefieres tu propia empresa, rellena el formulario. La invitación se descartará.</p>
+    </div>
     <button class="entrar" id="bAlta" type="submit">Crear mi empresa</button>
     <div class="error" id="errorAlta"></div>
     <p style="color:#9FB4CF;font-size:13px;line-height:1.45;margin:14px 0 0">¿Trabajas para una empresa que ya usa la app? Pídele a tu jefe que te añada con este mismo correo desde <b>Equipo</b> y vuelve a entrar.</p>
     <button type="button" id="bBorrarAlta" style="display:block;width:100%;margin-top:2px;background:none;color:#9FB4CF;font-size:13px;font-weight:600;padding:8px;text-decoration:underline">Eliminar mi cuenta</button>
     <button type="button" id="bSalirAlta" style="display:block;width:100%;margin-top:8px;background:none;color:#CFE0F5;font-size:14px;font-weight:700;padding:10px">Cerrar sesión</button>
   </form>
-  <div class="pie">La app de las empresas instaladoras</div>
+  <div class="pie">La app de las empresas instaladoras · <a href="/privacidad/" style="color:#9FB4CF">Privacidad</a></div>
 </section>
 
 <section id="inicio">
@@ -165,6 +169,7 @@ h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris
 <div class="velo" id="vCuenta"><div class="hoja"><h2>⚙️ Cuenta y suscripción <button data-cerrar>×</button></h2><div id="ctCuerpo"></div></div></div>
 <div class="velo" id="vAvisos"><div class="hoja"><h2>🔔 Avisos al móvil <button data-cerrar>×</button></h2><div id="avCuerpo"></div></div></div>
 <script src="/config.js"></script>
+<script src="/comun.js"></script>
 <script src="/nube.js"></script>
 <script>
 "use strict";
@@ -186,8 +191,11 @@ function pintarModo(){$("bEntrar").textContent=modoAlta?"Crear cuenta":"Entrar";
 function verAcceso(alta,txt){$("acceso").style.display="flex";$("inicio").style.display="none";$("avisoConf").hidden=Nube.configurado();
   $("fAcceso").hidden=!!alta;$("fAlta").hidden=!alta;if(txt)$("altaTxt").textContent=txt;pintarModo()}
 // Con sesión pero sin empresa: hay que darla de alta (o esperar a que te añadan) antes de entrar
-function sinAcceso(){if(Nube.deBaja()){verAcceso(true,"Tu empresa te ha dado de baja en la app. Si es un error, habla con tu administrador.");$("fAlta").querySelectorAll("label,input,#bAlta").forEach(e=>e.hidden=true);return true}
-  if(Nube.sinEmpresa()){verAcceso(true);return true}return false}
+function sinAcceso(){if(Nube.deBaja()){verAcceso(true,"Tu empresa te ha dado de baja en la app. Si es un error, habla con tu administrador.");$("fAlta").querySelectorAll("label,input,#bAlta,#fInvita").forEach(e=>e.hidden=true);return true}
+  if(Nube.sinEmpresa()){verAcceso(true);pintarInvitacion();return true}return false}
+function pintarInvitacion(){const inv=(Nube.perfil()||{}).invitacion,box=$("fInvita");
+  if(inv&&inv.empresa){box.hidden=false;$("altaTxt").textContent=inv.empresa+" te ha invitado como técnico"+(inv.nombre?" ("+inv.nombre+")":"")+". Acepta para entrar en su equipo, o crea tu propia empresa.";$("bAlta").textContent="Crear mi propia empresa"}
+  else{box.hidden=true;$("altaTxt").textContent="Último paso: da de alta tu empresa. Tendrás 30 días de prueba con todo incluido.";$("bAlta").textContent="Crear mi empresa"}}
 function mostrar(){
   if(!dentro()){verAcceso(false);return}
   if(Nube.configurado()&&sinAcceso())return;
@@ -260,6 +268,12 @@ $("fAlta").onsubmit=async e=>{e.preventDefault();const b=$("bAlta"),er=$("errorA
     if(r==="ok"){mostrar()}else er.textContent={falta_empresa:"Pon el nombre de tu empresa.",falta_nombre:"Pon tu nombre."}[r]||r}
   catch(err){er.textContent=/abort|fetch|network|conexi/i.test(String(err.message))?"Sin conexión. Inténtalo de nuevo.":"No se ha podido crear: "+err.message}
   b.disabled=false;b.textContent="Crear mi empresa"};
+$("bAceptarInv").onclick=async()=>{const b=$("bAceptarInv"),er=$("errorAlta");er.textContent="";b.disabled=true;b.textContent="Entrando…";
+  try{const r=await Nube.api("rpc/aceptar_invitacion",{method:"POST",body:"{}"});
+    if(r==="ok"){await Nube.cargarPerfil();mostrar();return}
+    er.textContent={sin_invitacion:"Esa invitación ya no está.",sin_confirmar:"Falta confirmar el correo.",ya_tienes:"Esta cuenta ya pertenece a una empresa."}[r]||r}
+  catch(err){er.textContent=/abort|fetch|network|conexi/i.test(String(err.message))?"Sin conexión. Inténtalo de nuevo.":"No se ha podido aceptar: "+err.message}
+  b.disabled=false;b.textContent="Aceptar y entrar en la empresa"};
 const cerrar=()=>{Nube.salir();localStorage.removeItem(LOCAL);localStorage.removeItem("almara-perfil");location.replace("/")};
 $("bSalirAlta").onclick=cerrar;
 $("bSalir").onclick=cerrar;
@@ -271,7 +285,7 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
   const plan=pagada?`<div class="estadoAv" style="background:#E3F4EA"><b>Suscripción activa</b> hasta el ${fechaL(pf.pagado_hasta)}.</div>`
     :enPrueba?`<div class="estadoAv" style="background:#FFF8EC"><b>Periodo de prueba</b> hasta el ${fechaL(pf.prueba_hasta)}. Después podrás ver tus datos, pero no guardar cambios hasta suscribirte.</div>`
     :`<div class="estadoAv" style="background:#FDECEC"><b>Sin suscripción activa.</b> Puedes ver tus datos, pero no se guardan cambios nuevos.</div>`;
-  const pagoM=CFG.pagoMensual?enlacePago(CFG.pagoMensual,pf,ses):"",pagoA=CFG.pagoAnual?enlacePago(CFG.pagoAnual,pf,ses):"",precios=[CFG.precioMensual,CFG.precioAnual].filter(Boolean).join(" o "),portal=CFG.portal?enlacePago(CFG.portal,{},ses):"";
+  const pagoM=CFG.pagoMensual?enlacePago(CFG.pagoMensual,pf,ses):"",pagoA=CFG.pagoAnual?enlacePago(CFG.pagoAnual,pf,ses):"",precios=[CFG.precioMensual,CFG.precioAnual].filter(Boolean).join(" o ");
   let sus="";
   if(!adm)sus=`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:10px 0 0">La suscripción la lleva el administrador de tu empresa.</p>`;
   else{
@@ -279,8 +293,7 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
         +(pagoA?`<a class="bt az" href="${esc(pagoA)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:8px">Suscripción anual${CFG.precioAnual?" · "+esc(CFG.precioAnual):""}</a>`:"")
         +`<small style="color:var(--gris);display:block;margin-top:6px">Precio por empresa, con todos tus técnicos incluidos. IVA no incluido. El pago se hace en una página segura de Stripe y la suscripción se activa en cuanto se confirma el pago.</small>`
       :`<p style="font-size:14.5px;line-height:1.45;margin:10px 0 0">Para suscribirte${precios?" ("+esc(precios)+", por empresa y sin IVA)":""}, escríbenos${CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":""} y te la activamos.</p>`;
-    if(pagada)sus+=portal?`<a class="bt" href="${esc(portal)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px">Cambiar tarjeta, ver facturas o cancelar</a><small style="color:var(--gris);display:block;margin-top:6px">Si cancelas, sigues teniendo acceso hasta el ${fechaL(pf.pagado_hasta)} y no se te cobra más.</small>`
-      :`<p style="font-size:14.5px;line-height:1.45;margin:10px 0 0">Para cancelar la suscripción o cambiar la forma de pago, escríbenos${CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":""}. Si cancelas, mantienes el acceso hasta el ${fechaL(pf.pagado_hasta)}.</p>`;
+    if(pagada)sus+=`<button class="bt" id="ctPortal" type="button" style="display:block;width:100%;text-align:center;margin-top:10px">Cambiar tarjeta, ver facturas o cancelar</button><small style="color:var(--gris);display:block;margin-top:6px">Si cancelas al final del periodo, sigues dentro hasta el ${fechaL(pf.pagado_hasta)} y no se cobra más. Si la cancelas al momento, el acceso se cierra ese día.</small><div id="ctPortalRes" style="font-size:13.5px;margin-top:6px;color:var(--gris)"></div>`;
   }
   const borrar=adm?`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:0 0 8px">Se borra <b>para siempre</b> tu cuenta y la empresa <b>${esc(pf.empresa||"")}</b> entera: clientes, planos, presupuestos, partes, fotos y contactos, también los de tus técnicos. No se puede deshacer${pagada?", y antes conviene cancelar la suscripción para que no se te siga cobrando":""}.</p>
       <input id="ctConf" autocomplete="off" autocapitalize="characters" placeholder="Escribe ELIMINAR para confirmar" style="display:block;width:100%;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px">
@@ -295,13 +308,16 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
     try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}res.textContent=r==="solo_admin"?"Solo el administrador puede eliminar la empresa.":"No se ha podido eliminar: "+r}
     catch(e){res.textContent="No se ha podido eliminar: "+e.message}
     $("ctBorrar").disabled=false;$("ctBorrar").textContent="Eliminar la cuenta y la empresa"}}
+  if($("ctPortal"))$("ctPortal").onclick=async()=>{const res=$("ctPortalRes");res.textContent="Abriendo Stripe…";$("ctPortal").disabled=true;
+    try{location.href=await Nube.abrirPortal()}
+    catch(e){const m=String(e.message||e);res.textContent=/sin_pago/.test(m)?"Todavía no hay un pago asociado. Si acabas de pagar, espera un minuto y vuelve a intentarlo.":"No se ha podido abrir el portal."+(CFG.soporte?" Escríbenos: "+CFG.soporte:"");$("ctPortal").disabled=false}};
 $("bCuenta").onclick=()=>{pintarCuenta();$("vCuenta").classList.add("on");Nube.cargarPerfil().then(pintarCuenta).catch(()=>{})};
 $("vCuenta").addEventListener("click",e=>{if(e.target===$("vCuenta")||e.target.closest("[data-cerrar]"))$("vCuenta").classList.remove("on")});
 $("bBorrarAlta").onclick=async()=>{if(!confirm("¿Eliminar tu cuenta para siempre? No se puede deshacer."))return;
   try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}$("errorAlta").textContent="No se ha podido eliminar: "+r}catch(e){$("errorAlta").textContent="No se ha podido eliminar: "+e.message}};
 // ---------- Formulario público de contacto (solo administrador) ----------
 $("buscaIni").addEventListener("input",buscarIni);
-$("bForm").onclick=()=>{localStorage.setItem("almara-vio-form","1");const pf=Nube.perfil()||{},url=location.origin+"/c/?e="+encodeURIComponent(pf.empresa_id||"");
+$("bForm").onclick=()=>{localStorage.setItem("almara-vio-form","1");const pf=Nube.perfil()||{},url=Nube.webUrl()+"/c/?e="+encodeURIComponent(pf.empresa_id||"");
   $("fmCuerpo").innerHTML=`<p style="margin:0 0 6px;color:var(--gris);font-size:14px;line-height:1.45">Este es el formulario de contacto de <b>${esc(pf.empresa||"tu empresa")}</b>. Lo que escriban tus clientes te llega a <b>Contactos web</b>. Ponlo en tu web, en tu perfil de Instagram o envíalo por WhatsApp.</p>
     <div class="canal" style="font-size:13px">${esc(url)}</div><button class="bt az" id="fmCopiar">Copiar enlace</button><a class="bt" href="${esc(url)}" target="_blank" rel="noopener">Abrir</a>`;
   $("fmCopiar").onclick=async()=>{try{await navigator.clipboard.writeText(url);$("fmCopiar").textContent="Copiado ✓"}catch(e){prompt("Copia el enlace:",url)}};
@@ -310,7 +326,7 @@ $("vForm").addEventListener("click",e=>{if(e.target===$("vForm")||e.target.close
 // ---------- Avisos al móvil (app ntfy) ----------
 let AV=null;
 async function leerAvisos(){try{const r=await Nube.api("ajustes_avisos?id=eq.1&select=*");AV=r&&r[0]||null}catch(e){AV=undefined}return AV}
-async function guardarAvisos(cambios){await Nube.api("ajustes_avisos?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:1,app_url:location.origin,...cambios})});await leerAvisos()}
+async function guardarAvisos(cambios){await Nube.api("ajustes_avisos?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:1,app_url:Nube.webUrl(),...cambios})});await leerAvisos()}
 function estadoBoton(){pushActual().then(sub=>{$("avEstado").textContent=sub?"Activados en este dispositivo ✓":AV&&AV.ntfy_tema?"Activados con ntfy ✓":"Te avisa al llegar un contacto o cuando aceptan un presupuesto"})}
 // Notificaciones propias (Web Push)
 const VAPID=(window.ALMARA_CONFIG||{}).vapidPublicKey||"";
@@ -382,7 +398,7 @@ async function pintarEquipo(){const c=$("eqCuerpo");c.innerHTML=`<p style="color
     h+=`<div class="sw" style="align-items:flex-start"><span><b>${esc(m.nombre)}</b>${esYo?" (tú)":""}${baja?` <span style="color:var(--rojo);font-size:12px;font-weight:700">DE BAJA</span>`:""}<br><small style="color:var(--gris)">${esc(m.email)}${m.serie?" · serie "+esc(m.serie)+" (P-"+new Date().getFullYear()+"-"+esc(m.serie)+"001)":""}</small></span>
       ${esYo?"":`<span style="text-align:right;flex:none"><button class="bt az" data-ver="${esc(m.user_id)}">${vc&&vc.uid===m.user_id?"Viendo ✓":"Ver sus datos"}</button><br><button class="bt" data-baja="${esc(m.user_id)}" data-act="${baja?1:0}">${baja?"Reactivar":"Dar de baja"}</button></span>`}</div>`}
   if(vc)h+=`<button class="bt" id="eqVolver" style="margin-top:8px">← Volver a mis datos</button>`;
-  for(const i of INV)h+=`<div class="sw" style="align-items:flex-start"><span><b>${esc(i.nombre)}</b> <span style="color:var(--nar);font-size:12px;font-weight:700">INVITADO</span><br><small style="color:var(--gris)">${esc(i.email)} · serie ${esc(i.serie)} · aún no ha creado su cuenta</small></span><span style="flex:none"><button class="bt" data-quitar="${esc(i.email)}">Quitar</button></span></div>`;
+  for(const i of INV)h+=`<div class="sw" style="align-items:flex-start"><span><b>${esc(i.nombre)}</b> <span style="color:var(--nar);font-size:12px;font-weight:700">PENDIENTE</span><br><small style="color:var(--gris)">${esc(i.email)} · serie ${esc(i.serie)} · tiene que aceptar la invitación</small></span><span style="flex:none"><button class="bt" data-quitar="${esc(i.email)}">Quitar</button></span></div>`;
   h+=`<h3 style="margin:22px 0 6px">Añadir un compañero</h3>
   <div class="paso"><span class="n">1</span><div>Rellena sus datos y pulsa <b>Añadir</b>:
     <input id="eqNom" placeholder="Nombre (ej. Juan)" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px">
@@ -390,7 +406,7 @@ async function pintarEquipo(){const c=$("eqCuerpo");c.innerHTML=`<p style="color
     <input id="eqSerie" maxlength="3" placeholder="Letra para sus números (ej. J)" style="display:block;width:100%;margin-top:6px;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px;text-transform:uppercase">
     <small style="color:var(--gris);display:block;margin-top:4px">Sus presupuestos saldrán como P-${new Date().getFullYear()}-J001 y sus partes como PT-${new Date().getFullYear()}-J001, para que no se mezclen con los tuyos.</small>
     <button class="bt az" id="eqAdd" style="margin-top:8px">Añadir</button><div id="eqRes" style="font-size:13.5px;margin-top:6px"></div></div></div>
-  <div class="paso"><span class="n">2</span><div>Pásale esta dirección: <b>${esc(location.origin)}</b>. Que pulse <b>Crear cuenta</b> con <b>ese mismo correo</b>: entrará directamente en tu empresa como técnico.</div></div>`;
+  <div class="paso"><span class="n">2</span><div>Pásale esta dirección: <b>${esc(Nube.webUrl())}</b>. Que entre con <b>ese mismo correo</b> y pulse <b>Aceptar</b>. Hasta entonces no ve los datos de la empresa.</div></div>`;
   c.innerHTML=h;
   c.querySelectorAll("[data-ver]").forEach(b=>b.onclick=()=>{const m=L.find(x=>x.user_id===b.dataset.ver);Nube.ver({uid:m.user_id,nombre:m.nombre,serie:m.serie});location.href="/"});
   c.querySelectorAll("[data-baja]").forEach(b=>b.onclick=async()=>{const act=b.dataset.act==="1",m=L.find(x=>x.user_id===b.dataset.baja);

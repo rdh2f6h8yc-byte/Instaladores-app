@@ -246,11 +246,19 @@ begin
     'respondido', r.respondido, 'firma_nombre', r.firma_nombre);
 end $$;
 
--- …y aceptarlo (con firma) o rechazarlo, una sola vez
+-- …y aceptarlo (con firma) o rechazarlo, una sola vez. La firma tiene que ser un PNG real.
 create or replace function public.responder_presupuesto(p_token uuid, p_acepta boolean, p_nombre text, p_dni text, p_firma text, p_comentario text) returns text
 language plpgsql security definer set search_path = public as $$
+declare r public.presupuestos_publicos; v_hasta text;
 begin
-  if p_acepta and (p_firma is null or length(p_firma) < 100 or length(p_firma) > 400000) then
+  select * into r from public.presupuestos_publicos where token = p_token;
+  if not found or r.estado <> 'enviado' then return 'ya_respondido'; end if;
+  v_hasta := r.datos->>'validoHasta';
+  if v_hasta ~ '^\d{4}-\d{2}-\d{2}$' and (v_hasta || 'T23:59:59Z')::timestamptz < now() then
+    return 'caducado';
+  end if;
+  if p_acepta and (p_firma is null or p_firma !~ '^data:image/png;base64,[A-Za-z0-9+/=]+$'
+      or length(p_firma) < 100 or length(p_firma) > 400000) then
     raise exception 'Falta la firma';
   end if;
   update public.presupuestos_publicos
@@ -265,27 +273,24 @@ end $$;
 -- =====================================================================
 -- 8) ALTA DE EMPRESA, PERFIL Y EQUIPO
 -- =====================================================================
--- Quién soy. Si me habían invitado con este correo, entro en esa empresa como técnico.
+-- Quién soy. Una invitación no mete a nadie en la empresa hasta que la acepte.
 create or replace function public.mi_perfil() returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare q public.equipo; e public.empresas; i public.invitaciones; v_email text;
+declare q public.equipo; e public.empresas; i public.invitaciones; v_email text; v_emp text;
 begin
   if auth.uid() is null then raise exception 'Sin sesión'; end if;
   select * into q from public.equipo where user_id = auth.uid();
-  if not found then
+  if q.user_id is null then
     select lower(u.email) into v_email from auth.users u
      where u.id = auth.uid() and u.email_confirmed_at is not null;
     if v_email is not null then
       select * into i from public.invitaciones where email = v_email;
-      if found then
-        insert into public.equipo (user_id, empresa_id, email, nombre, rol, serie)
-          values (auth.uid(), i.empresa_id, v_email, i.nombre, 'tecnico', i.serie)
-          returning * into q;
-        delete from public.invitaciones where email = v_email;
-      end if;
     end if;
-  end if;
-  if q.user_id is null then
+    if i.email is not null then
+      select nombre into v_emp from public.empresas where id = i.empresa_id;
+      return jsonb_build_object('user_id', auth.uid(), 'rol', 'sin_empresa', 'nombre', '', 'serie', '',
+        'invitacion', jsonb_build_object('empresa_id', i.empresa_id, 'empresa', v_emp, 'nombre', i.nombre, 'serie', i.serie));
+    end if;
     return jsonb_build_object('user_id', auth.uid(), 'rol', 'sin_empresa', 'nombre', '', 'serie', '');
   end if;
   select * into e from public.empresas where id = q.empresa_id;
@@ -304,13 +309,15 @@ begin
   if char_length(btrim(coalesce(p_empresa, ''))) = 0 then return 'falta_empresa'; end if;
   if char_length(btrim(coalesce(p_nombre, ''))) = 0 then return 'falta_nombre'; end if;
   select lower(email) into v_email from auth.users where id = auth.uid();
+  -- Si tenía una invitación y prefiere crear su propia empresa, la invitación se descarta
+  delete from public.invitaciones where email = v_email;
   insert into public.empresas (nombre) values (left(btrim(p_empresa), 120)) returning id into v_id;
   insert into public.equipo (user_id, empresa_id, email, nombre, rol, serie)
     values (auth.uid(), v_id, coalesce(v_email, ''), left(btrim(p_nombre), 80), 'admin', '');
   return 'ok';
 end $$;
 
--- Añadir a un compañero: si ya tiene cuenta entra al momento; si no, queda invitado
+-- Añadir a un compañero. Si ya está en la empresa se actualiza; si no, queda invitado hasta que acepte.
 create or replace function public.guardar_tecnico(p_email text, p_nombre text, p_serie text) returns text
 language plpgsql security definer set search_path = public as $$
 declare v_emp uuid := public.mi_empresa(); v_email text := lower(btrim(coalesce(p_email, '')));
@@ -332,16 +339,13 @@ begin
     if found then
       if q.empresa_id <> v_emp then return 'otra_empresa'; end if;
       update public.equipo set nombre = v_nombre, serie = v_serie where user_id = v_user;
-    else
-      insert into public.equipo (user_id, empresa_id, email, nombre, rol, serie)
-        values (v_user, v_emp, v_email, v_nombre, 'tecnico', v_serie);
+      delete from public.invitaciones where email = v_email and empresa_id = v_emp;
+      return 'ok';
     end if;
-    delete from public.invitaciones where email = v_email and empresa_id = v_emp;
-    return 'ok';
   end if;
   if exists (select 1 from public.invitaciones where email = v_email and empresa_id <> v_emp) then return 'otra_empresa'; end if;
   insert into public.invitaciones (email, empresa_id, nombre, serie) values (v_email, v_emp, v_nombre, v_serie)
-    on conflict (email) do update set nombre = excluded.nombre, serie = excluded.serie;
+    on conflict (email) do update set empresa_id = excluded.empresa_id, nombre = excluded.nombre, serie = excluded.serie;
   return 'invitado';
 end $$;
 
@@ -350,6 +354,34 @@ language plpgsql security definer set search_path = public as $$
 begin
   if not public.soy_admin() then raise exception 'Solo el administrador'; end if;
   delete from public.invitaciones where email = lower(btrim(p_email)) and empresa_id = public.mi_empresa();
+  return 'ok';
+end $$;
+
+-- El invitado entra en la empresa solo si pulsa Aceptar
+create or replace function public.aceptar_invitacion() returns text
+language plpgsql security definer set search_path = public as $$
+declare i public.invitaciones; v_email text;
+begin
+  if auth.uid() is null then raise exception 'Sin sesión'; end if;
+  if exists (select 1 from public.equipo where user_id = auth.uid()) then return 'ya_tienes'; end if;
+  select lower(u.email) into v_email from auth.users u
+   where u.id = auth.uid() and u.email_confirmed_at is not null;
+  if v_email is null then return 'sin_confirmar'; end if;
+  select * into i from public.invitaciones where email = v_email;
+  if not found then return 'sin_invitacion'; end if;
+  insert into public.equipo (user_id, empresa_id, email, nombre, rol, serie)
+    values (auth.uid(), i.empresa_id, v_email, i.nombre, 'tecnico', i.serie);
+  delete from public.invitaciones where email = v_email;
+  return 'ok';
+end $$;
+
+create or replace function public.rechazar_invitacion() returns text
+language plpgsql security definer set search_path = public as $$
+declare v_email text;
+begin
+  if auth.uid() is null then raise exception 'Sin sesión'; end if;
+  select lower(email) into v_email from auth.users where id = auth.uid();
+  delete from public.invitaciones where email = v_email;
   return 'ok';
 end $$;
 
@@ -365,29 +397,38 @@ begin
 end $$;
 
 -- Eliminar la cuenta para siempre. El administrador elimina además la empresa entera
--- (datos de todo el equipo, contactos e invitaciones). Un técnico no puede: lo da de baja su administrador.
+-- (datos, fotos y cuentas de todo el equipo). Un técnico no puede: lo da de baja su administrador.
 create or replace function public.eliminar_cuenta() returns text
 language plpgsql security definer set search_path = public as $$
-declare q public.equipo;
+declare q public.equipo; v_ids uuid[];
 begin
   if auth.uid() is null then raise exception 'Sin sesión'; end if;
   select * into q from public.equipo where user_id = auth.uid();
   if found then
     if q.rol <> 'admin' then return 'solo_admin'; end if;
-    delete from public.datos where user_id in (select user_id from public.equipo where empresa_id = q.empresa_id);
-    delete from public.presupuestos_publicos where user_id in (select user_id from public.equipo where empresa_id = q.empresa_id);
+    select coalesce(array_agg(user_id), '{}') into v_ids from public.equipo where empresa_id = q.empresa_id;
+    delete from storage.objects
+     where bucket_id = 'fotos'
+       and (storage.foldername(name))[1] in (select x::text from unnest(v_ids) as x);
+    delete from public.datos where user_id = any (v_ids);
+    delete from public.presupuestos_publicos where user_id = any (v_ids);
     delete from public.empresas where id = q.empresa_id;
+    delete from auth.users where id = any (v_ids);
+    return 'ok';
   end if;
   delete from auth.users where id = auth.uid();
   return 'ok';
 end $$;
 
--- Suscripción de pago (Stripe). La función «stripe» (supabase/functions/stripe) llama a registrar_pago
--- cada vez que Stripe cobra: guarda quién paga y alarga la fecha de acceso. Nunca la acorta.
+-- Suscripción de pago (Stripe). La función «stripe» llama a registrar_pago.
+-- Con la suscripción activa alarga la fecha. Si Stripe la da por terminada, la recorta a ese día.
 alter table public.empresas add column if not exists stripe_cliente text;
 alter table public.empresas add column if not exists stripe_suscripcion text;
 
-create or replace function public.registrar_pago(p_empresa uuid, p_cliente text, p_suscripcion text, p_hasta timestamptz) returns text
+drop function if exists public.registrar_pago(uuid, text, text, timestamptz);
+drop function if exists public.registrar_pago(uuid, text, text, timestamptz, text);
+
+create or replace function public.registrar_pago(p_empresa uuid, p_cliente text, p_suscripcion text, p_hasta timestamptz, p_estado text) returns text
 language plpgsql security definer set search_path = public as $$
 declare v_id uuid;
 begin
@@ -400,8 +441,13 @@ begin
   update public.empresas
      set stripe_cliente = coalesce(p_cliente, stripe_cliente),
          stripe_suscripcion = coalesce(p_suscripcion, stripe_suscripcion),
-         pagado_hasta = case when p_hasta is null then pagado_hasta
-                             else greatest(coalesce(pagado_hasta, p_hasta), p_hasta) end
+         pagado_hasta = case
+           when p_estado in ('active', 'trialing') and p_hasta is not null
+             then greatest(coalesce(pagado_hasta, p_hasta), p_hasta)
+           when p_estado in ('canceled', 'unpaid', 'incomplete_expired')
+             then least(coalesce(pagado_hasta, coalesce(p_hasta, now())), coalesce(p_hasta, now()))
+           else pagado_hasta
+         end
    where id = v_id;
   return 'ok';
 end $$;
@@ -418,16 +464,19 @@ revoke all on function public.mi_perfil() from public, anon;
 revoke all on function public.crear_empresa(text, text) from public, anon;
 revoke all on function public.guardar_tecnico(text, text, text) from public, anon;
 revoke all on function public.quitar_invitacion(text) from public, anon;
+revoke all on function public.aceptar_invitacion() from public, anon;
+revoke all on function public.rechazar_invitacion() from public, anon;
 revoke all on function public.cambiar_estado_tecnico(uuid, boolean) from public, anon;
 grant execute on function public.mi_perfil(), public.crear_empresa(text, text), public.guardar_tecnico(text, text, text),
-  public.quitar_invitacion(text), public.cambiar_estado_tecnico(uuid, boolean) to authenticated;
+  public.quitar_invitacion(text), public.aceptar_invitacion(), public.rechazar_invitacion(),
+  public.cambiar_estado_tecnico(uuid, boolean) to authenticated;
 
 revoke all on function public.eliminar_cuenta() from public, anon;
 grant execute on function public.eliminar_cuenta() to authenticated;
 
 -- Solo la puede llamar el servidor (la función «stripe»), nunca un usuario de la app
-revoke all on function public.registrar_pago(uuid, text, text, timestamptz) from public, anon, authenticated;
-grant execute on function public.registrar_pago(uuid, text, text, timestamptz) to service_role;
+revoke all on function public.registrar_pago(uuid, text, text, timestamptz, text) from public, anon, authenticated;
+grant execute on function public.registrar_pago(uuid, text, text, timestamptz, text) to service_role;
 
 revoke all on function public.ver_presupuesto(uuid) from public;
 revoke all on function public.responder_presupuesto(uuid, boolean, text, text, text, text) from public;

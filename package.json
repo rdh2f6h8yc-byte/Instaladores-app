@@ -1,0 +1,24 @@
+{
+  "name": "borna",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Borna, app para empresas instaladoras",
+  "scripts": {
+    "www": "node scripts/copiar-www.mjs",
+    "cap:sync": "node scripts/copiar-www.mjs && cap sync",
+    "android": "cap open android",
+    "ios": "cap open ios",
+    "test": "node scripts/comprobar-logica.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3",
+    "@capacitor/splash-screen": "^7.0.3",
+    "@capacitor/status-bar": "^7.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}

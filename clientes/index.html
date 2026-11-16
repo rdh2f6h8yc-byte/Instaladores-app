@@ -115,6 +115,7 @@ textarea{resize:vertical}
 <div id="visor"><img id="visorImg" alt=""><div class="barra"><button id="visorBorrar">Eliminar foto</button><button id="visorCerrar">Cerrar</button></div></div>
 
 <script src="/config.js"></script>
+<script src="/comun.js"></script>
 <script src="/nube.js"></script>
 <script src="/pdf.js"></script>
 <script>
@@ -136,7 +137,7 @@ const eur=v=>(Math.round((+v||0)*100)/100).toFixed(2).replace(".",",").replace(/
 const iniciales=n=>(n||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 const color=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return COL[h%COL.length]};
 const telLimpio=t=>String(t||"").replace(/[^\d+]/g,"");
-const waNum=t=>{let n=telLimpio(t).replace(/^\+/,"");if(n.length===9)n="34"+n;return n};
+const waNum=t=>Nube.waNum(t);
 function cargar(){try{const s=localStorage.getItem(LS);if(s)db=JSON.parse(s)}catch(e){}if(!db.clientes)db.clientes=[]}
 function guardar(){try{localStorage.setItem(LS,JSON.stringify(db));Nube.marcar("clientes")}catch(e){aviso("No se ha podido guardar",3000)}}
 function aviso(t,ms){const a=$("aviso");if(!t){a.style.display="none";return}a.textContent=t;a.style.display="block";clearTimeout(aviso.t);aviso.t=setTimeout(()=>a.style.display="none",ms||1800)}
@@ -329,7 +330,7 @@ function formTrabajo(t){const n=!t;t=t||{fecha:hoy(),clase:"Instalación",cat:"S
   $("tMat").onclick=e=>{const b=e.target.closest("[data-mx]");if(b){matTmp.splice(+b.dataset.mx,1);pm()}};
   $("tAddM").onclick=()=>{matTmp.push({q:"1",c:""});pm();const ins=document.querySelectorAll("[data-mc]");ins[ins.length-1].focus()};
   document.querySelectorAll("[data-est]").forEach(b=>b.onclick=()=>{estado=b.dataset.est;document.querySelectorAll("[data-est]").forEach(x=>x.classList.toggle("on",x===b))});
-  const pfi=()=>{$("tFirma").innerHTML=firmaTmp?`<div class="card" style="text-align:center"><img src="${firmaTmp.png}" style="max-width:100%;max-height:110px"><div style="font-size:13px;color:var(--gris)">${esc(firmaTmp.nombre||"")}${firmaTmp.dni?" · DNI "+esc(firmaTmp.dni):""}</div></div><button class="btn" id="tFirmar">✍️ Volver a firmar</button>`
+  const pfi=()=>{const firma=firmaTmp&&Nube.srcImagen(firmaTmp.png);$("tFirma").innerHTML=firma?`<div class="card" style="text-align:center"><img src="${firma}" style="max-width:100%;max-height:110px"><div style="font-size:13px;color:var(--gris)">${esc(firmaTmp.nombre||"")}${firmaTmp.dni?" · DNI "+esc(firmaTmp.dni):""}</div></div><button class="btn" id="tFirmar">✍️ Volver a firmar</button>`
     :`<button class="btn" id="tFirmar" style="border:2px dashed var(--borde);background:#fff">✍️ Firma del cliente</button>`;$("tFirmar").onclick=()=>abrirFirma(f=>{firmaTmp=f;pfi()})};pfi();
   $("tAddF").onclick=()=>$("tFile").click();
   $("tFile").onchange=async e=>{aviso("Guardando fotos…",4000);for(const f of e.target.files){try{const b=await comprimir(f),id="f-"+uid();await IDB.set(id,b);Nube.subirFoto(id,b);fotosTmp.push(id)}catch(err){aviso("Una foto no se ha podido guardar",2500)}}e.target.value="";pf();aviso("Fotos añadidas")};

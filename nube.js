@@ -15,6 +15,15 @@ window.Nube = (() => {
     P.removeItem = function (k) { return rm.call(this, map.call(this, k)); };
   })();
   const URLB = String(C.supabaseUrl || "").replace(/\/+$/, ""), KEY = String(C.supabaseAnonKey || "");
+  const U = window.BornaUtil || {};
+  const waNum = U.waNum || (t => String(t || "").replace(/\D/g, ""));
+  const srcImagen = U.srcImagen || (() => "");
+  // Enlaces que se mandan a un cliente (presupuesto, formulario). En la app de la tienda
+  // location.origin es localhost; la web pública tiene que ser la de verdad.
+  const webUrl = () => {
+    const u = String(C.webUrl || "").replace(/\/+$/, "");
+    return /^https:\/\//.test(u) ? u : location.origin;
+  };
   const SK = "almara-sesion", PEND = "almara-fotos-pend";
   // Qué se sincroniza y dónde vive en el móvil
   const CLAVES = {
@@ -295,7 +304,15 @@ window.Nube = (() => {
     if (!r.ok) throw new Error("HTTP " + r.status);
     return r.json();
   }
+  // Abre el portal de Stripe (cambiar tarjeta, facturas, cancelar) con la sesión del administrador
+  async function abrirPortal() {
+    if (!configurado() || !sesion()) throw new Error("Sin sesión");
+    const r = await pedir("/functions/v1/stripe?accion=portal", { method: "POST", headers: await cab({ "Content-Type": "application/json" }), body: "{}" }, 20000);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.url) throw new Error(j.error || ("HTTP " + r.status));
+    return j.url;
+  }
   return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, crearEmpresa, eliminarCuenta, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
-    api, rpcPublica, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
+    api, rpcPublica, abrirPortal, webUrl, waNum, srcImagen, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
     clientes, estado: () => est, CLAVES };
 })();

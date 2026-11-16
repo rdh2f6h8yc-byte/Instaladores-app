@@ -64,6 +64,7 @@ input,textarea{display:block;width:100%;margin-top:4px;padding:11px;border:1px s
   <div style="display:flex;gap:10px;margin-top:14px"><button class="btn" id="nCancelar">Volver</button><button class="btn" id="nOk" style="background:var(--rojo);color:#fff">Rechazar presupuesto</button></div>
 </div></div>
 <script src="/config.js"></script>
+<script src="/comun.js"></script>
 <script src="/nube.js"></script>
 <script>
 "use strict";
@@ -88,14 +89,15 @@ function pintar(){const d=P.datos,E=d.empresa||{},c=d.cliente||{};
   h+=`<div class="card g2"><div><div class="lab">Cliente</div><b>${esc(c.nombre)}</b><div class="muted">${[c.contacto&&"Att.: "+c.contacto,c.nif&&"NIF/CIF: "+c.nif,c.direccion].filter(Boolean).map(esc).join("<br>")}</div></div>
     <div><div class="lab">Datos</div><div class="muted">Fecha: <b>${fES(d.fecha)}</b><br>Válido hasta: <b>${fES(d.validoHasta)}</b><br>Nº: <b>${esc(P.numero)}</b></div></div></div>`;
   if(d.titulo)h+=`<h2>${esc(d.titulo)}</h2>`;
-  h+=`<div class="card">${d.filas.map(f=>`<div class="fila"><div><b>${esc(f.c)}</b>${f.d?`<small>${esc(f.d)}</small>`:""}</div><div class="imp"><b>${eur(f.imp)}</b><small>${String(f.q).replace(".",",")} × ${eur(f.unit)}</small></div></div>`).join("")}</div>`;
+  h+=`<div class="card">${(d.filas||[]).map(f=>`<div class="fila"><div><b>${esc(f.c)}</b>${f.d?`<small>${esc(f.d)}</small>`:""}</div><div class="imp"><b>${eur(f.imp)}</b><small>${String(f.q).replace(".",",")} × ${eur(f.unit)}</small></div></div>`).join("")}</div>`;
   h+=`<div class="total"><span>${d.part?"TOTAL (IVA incluido)":"TOTAL"}</span><span>${eur(d.total)}</span></div>
     <div class="desg">Base imponible ${eur(d.base)} · IVA 21 % ${eur(d.cuota)}${d.part?"":" · Precios sin IVA"}</div>`;
-  if((d.planos||[]).length)h+=`<div class="card" style="margin-top:14px"><div class="lab">Plano de la instalación</div>${d.planos.map(p=>`<div class="muted" style="margin-top:6px">${esc(p.nombre)}</div><img class="plano" src="${p.img}" alt="">`).join("")}</div>`;
+  if((d.planos||[]).length)h+=`<div class="card" style="margin-top:14px"><div class="lab">Plano de la instalación</div>${d.planos.map(p=>{const src=Nube.srcImagen(p.img);return `<div class="muted" style="margin-top:6px">${esc(p.nombre)}</div>${src?`<img class="plano" src="${src}" alt="">`:""}`}).join("")}</div>`;
+  const firmaEmp=Nube.srcImagen(E.firma),telWa=Nube.waNum(E.telefono);
   h+=`<div class="card" style="margin-top:14px"><div class="lab">Condiciones</div><ul class="muted">${(d.condiciones||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
   <div class="card"><div class="lab">${esc(E.marca||"")}</div><div class="muted">${esc(E.titular||"")}${E.nie?" · NIF "+esc(E.nie):""}<br>${esc(E.localidad||"")}<br>${esc(E.telefono||"")} · ${esc(E.email||"")}</div>
-    ${E.firma?`<img class="firmaimg" src="${E.firma}" alt="Firma">`:""}
-    <div class="cont"><a href="tel:${esc(String(E.telefono||"").replace(/\s/g,""))}">📞 Llamar</a><a href="https://wa.me/34${esc(String(E.telefono||"").replace(/\D/g,""))}?text=${encodeURIComponent("Hola, sobre el presupuesto "+P.numero)}">💬 WhatsApp</a></div></div>`;
+    ${firmaEmp?`<img class="firmaimg" src="${firmaEmp}" alt="Firma">`:""}
+    <div class="cont"><a href="tel:${esc(String(E.telefono||"").replace(/[^\d+]/g,""))}">📞 Llamar</a>${telWa?`<a href="https://wa.me/${telWa}?text=${encodeURIComponent("Hola, sobre el presupuesto "+P.numero)}">💬 WhatsApp</a>`:""}</div></div>`;
   $("main").innerHTML=h;$("barra").hidden=!(P.estado==="enviado"&&!caducado)}
 // Firma
 const cv=$("cv"),cx=cv.getContext("2d");let trazo=false;
@@ -111,10 +113,10 @@ function firmaPNG(){const k=Math.min(1,600/cv.width),o=document.createElement("c
 $("fOk").onclick=async()=>{if(!trazo){alert("Firma en el recuadro para aceptar");return}if(!$("fNom").value.trim()){alert("Escribe tu nombre");return}
   $("fOk").disabled=true;$("fOk").textContent="Enviando…";
   try{const r=await Nube.rpcPublica("responder_presupuesto",{p_token:token,p_acepta:true,p_nombre:$("fNom").value.trim(),p_dni:$("fDni").value.trim(),p_firma:firmaPNG(),p_comentario:$("fCom").value.trim()});
-    $("vFirma").classList.remove("on");await cargar();if(r!=="ok")alert("Este presupuesto ya estaba respondido.")}catch(e){alert("No se ha podido enviar. Revisa la conexión e inténtalo de nuevo.")}
+    $("vFirma").classList.remove("on");await cargar();if(r==="caducado")alert("Este presupuesto ha caducado.");else if(r!=="ok")alert("Este presupuesto ya estaba respondido.")}catch(e){alert("No se ha podido enviar. Revisa la conexión e inténtalo de nuevo.")}
   $("fOk").disabled=false;$("fOk").textContent="Aceptar presupuesto"};
 $("bNo").onclick=()=>$("vNo").classList.add("on");$("nCancelar").onclick=()=>$("vNo").classList.remove("on");
-$("nOk").onclick=async()=>{try{await Nube.rpcPublica("responder_presupuesto",{p_token:token,p_acepta:false,p_nombre:"",p_dni:"",p_firma:null,p_comentario:$("nCom").value.trim()});$("vNo").classList.remove("on");await cargar()}catch(e){alert("No se ha podido enviar. Inténtalo de nuevo.")}};
+$("nOk").onclick=async()=>{try{const r=await Nube.rpcPublica("responder_presupuesto",{p_token:token,p_acepta:false,p_nombre:"",p_dni:"",p_firma:null,p_comentario:$("nCom").value.trim()});$("vNo").classList.remove("on");await cargar();if(r==="caducado")alert("Este presupuesto ha caducado.")}catch(e){alert("No se ha podido enviar. Inténtalo de nuevo.")}};
 cargar();
 </script>
 </body>

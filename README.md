@@ -16,7 +16,7 @@ Cada empresa se da de alta sola, tiene sus propios datos y su propio equipo de t
 ## Cómo funciona
 
 - **Alta**: quien pulsa «Crear cuenta» y da de alta su empresa es su administrador. Empieza con 30 días de prueba.
-- **Equipo**: el administrador añade compañeros con su correo; al crear su cuenta con ese correo entran en su empresa como técnicos.
+- **Equipo**: el administrador invita a un compañero con su correo. Esa persona crea la cuenta (o entra, si ya la tiene) y acepta la invitación. Hasta entonces no ve nada de la empresa.
 - **Permisos** (los impone la base de datos): cada técnico ve solo lo suyo; el administrador ve lo de su equipo;
   nadie ve nada de otra empresa.
 - **Formulario de contacto**: cada empresa tiene su enlace público (`/c/?e=…`) y recibe los mensajes en «Contactos web».
@@ -38,18 +38,58 @@ Cada empresa se da de alta sola, tiene sus propios datos y su propio equipo de t
 La función `supabase/functions/stripe/index.ts` recibe los avisos de Stripe y pone a cada empresa la fecha
 hasta la que tiene acceso (fin del periodo pagado más 2 días de margen). Nunca acorta una fecha.
 
-1. Ejecuta otra vez `supabase.sql` (crea `registrar_pago`).
-2. Supabase → **Edge Functions** → crea una función llamada `stripe`, pega el contenido de `index.ts`
-   y despliégala con **Verify JWT desactivado**.
+1. Ejecuta otra vez `supabase.sql` (crea `registrar_pago` y el resto de reglas).
+   Si ya lo habías ejecutado, vuelve a pegarlo entero: se puede lanzar más de una vez.
+2. Supabase → **Edge Functions** → crea o actualiza la función llamada `stripe`, pega el contenido de
+   `supabase/functions/stripe/index.ts` y despliégala con **Verify JWT desactivado**.
 3. Supabase → Edge Functions → **Secrets**: añade `STRIPE_SECRET_KEY` (clave secreta de Stripe) y,
    después del paso 4, `STRIPE_WEBHOOK_SECRET`.
 4. Stripe → Desarrolladores → **Webhooks** → añade el destino
    `https://<tu-proyecto>.supabase.co/functions/v1/stripe` con los eventos `checkout.session.completed`,
    `invoice.paid`, `customer.subscription.updated` y `customer.subscription.deleted`.
    Copia su secreto de firma (`whsec_…`) al secreto `STRIPE_WEBHOOK_SECRET`.
+5. Stripe → **Ajustes → Portal de clientes** → actívalo (cambiar tarjeta, facturas y cancelar).
+   El botón de la app abre ese portal con la sesión del administrador. No hace falta pegar ningún enlace.
 
 Las claves `sk_…` y `whsec_…` no se guardan nunca en este repositorio.
 Si alguien paga sin pasar por la app (sin la referencia de su empresa), hay que activarlo a mano.
+
+Una suscripción activa alarga el acceso hasta el fin del periodo más 2 días. Si se cancela al momento
+o queda impagada, el acceso se cierra ese día. Si se cancela al final del periodo, sigue hasta entonces.
+
+## Equipo
+
+El administrador invita por correo. La persona entra con ese correo y tiene que pulsar **Aceptar**.
+Hasta entonces no ve los datos de la empresa y puede crear la suya propia si lo prefiere.
+
+## Publicar en App Store y Play Store
+
+La web sigue en Vercel. La app de las tiendas es la misma, empaquetada con Capacitor
+(`appId` `group.almara.borna`). Los enlaces que se envían a clientes salen de `webUrl` en `config.js`,
+así que un presupuesto abierto desde el móvil del cliente llega a la web, no a la app.
+
+Hace falta, una sola vez:
+
+- Cuenta de [Apple Developer](https://developer.apple.com/programs/) (99 USD/año) y un Mac con Xcode para la App Store.
+- Cuenta de [Google Play Console](https://play.google.com/console) (25 USD, un pago) para Play Store.
+
+En un ordenador, dentro de esta carpeta:
+
+```bash
+npm install
+node scripts/copiar-www.mjs
+npx cap add android
+npx cap add ios
+npx cap sync
+```
+
+- **Android**: `npx cap open android`, en Android Studio **Build → Generate Signed Bundle**, y sube el `.aab` a Play Console.
+  Ficha: nombre Borna, categoría Empresas, política de privacidad `https://instaladoresapp.vercel.app/privacidad/`.
+- **iPhone**: `npx cap open ios` en un Mac, firma con tu equipo de Apple, **Product → Archive** y súbelo con Transporter o Xcode a App Store Connect.
+  La misma URL de privacidad, clasificación 4+, y capturas del iPhone.
+
+Apple y Google revisan a mano: no es un envío automático desde aquí. La app funciona sin conexión con lo último
+que se guardó en el móvil, que es lo que piden para no ser solo un acceso directo a la web.
 
 ## Pendiente
 

@@ -24,7 +24,7 @@
   <label>¿Cómo nos ha conocido?<input id="nO" placeholder="Llamada, WhatsApp, Google, recomendación…"></label>
   <button class="btn az" id="nOk">Guardar contacto</button></div></div>
 <div id="aviso"></div>
-<script src="/config.js"></script><script src="/nube.js"></script>
+<script src="/config.js"></script><script src="/comun.js"></script><script src="/nube.js"></script>
 <script>
 "use strict";
 if(!Nube.requerir()||!Nube.soloAdmin())throw new Error("Solo el administrador");
@@ -32,7 +32,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const aviso=(t,ms)=>{const a=$("aviso");a.textContent=t;a.style.display=t?"block":"none";clearTimeout(aviso.t);if(t)aviso.t=setTimeout(()=>a.style.display="none",ms||1800)};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const tel=t=>String(t||"").replace(/[^\d+]/g,""),wa=t=>{let n=tel(t).replace(/^\+/,"");if(n.length===9)n="34"+n;return n};
+const tel=t=>String(t||"").replace(/[^\d+]/g,""),wa=t=>Nube.waNum(t);
 const CACHE="almara-contactos-cache";
 let L=[],filtro="nuevo";
 const EST={nuevo:["Nuevo","n"],contactado:["Contactado","a"],cliente:["Ya es cliente","v"],descartado:["Descartado",""]};
