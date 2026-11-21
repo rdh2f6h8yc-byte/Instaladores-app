@@ -60,6 +60,46 @@ Si alguien paga sin pasar por la app (sin la referencia de su empresa), hay que 
 Una suscripción activa alarga el acceso hasta el fin del periodo más 2 días. Si se cancela al momento
 o queda impagada, el acceso se cierra ese día. Si se cancela al final del periodo, sigue hasta entonces.
 
+## Presupuesto con IA (foto + voz)
+
+En **Inicio → ✨ Presupuesto con IA** (o dentro de Presupuestos): fotos de la obra, se dicta el trabajo y sale el
+presupuesto con las partidas de la tarifa de la empresa. Lo que no está en la tarifa sale en naranja con un precio
+orientativo para revisarlo. Después se envía por WhatsApp con el enlace para aceptar y firmar.
+
+Una sola vez:
+
+1. Ejecuta otra vez `supabase.sql` entero (crea `usar_ia` y el límite diario por empresa).
+2. Supabase → **Edge Functions** → crea la función `ia` con `supabase/functions/ia/index.ts` y **Verify JWT activado**.
+3. Secretos: `ANTHROPIC_API_KEY` (clave de [console.anthropic.com](https://console.anthropic.com)).
+   Opcionales: `ANTHROPIC_MODEL` (por defecto `claude-sonnet-5-5`) e `IA_MAX_DIA` (por defecto 40 por empresa y día).
+
+Cada presupuesto con IA cuesta unos céntimos de API; el límite diario evita sustos.
+
+## Suscripción dentro de la app de iPhone (compra con Apple)
+
+En la app de iPhone, **Cuenta y suscripción** muestra los planes con el precio de App Store, el botón de compra y
+«Restaurar compras». La compra la cobra Apple; la función `apple` la confirma con Apple y activa la empresa.
+En la web sigue el pago con Stripe. Las dos formas activan la misma empresa.
+
+Una sola vez:
+
+1. App Store Connect → **Acuerdos, impuestos y banca**: firma el acuerdo de apps de pago y pon la cuenta bancaria.
+2. App Store Connect → Borna → **Suscripciones**: crea un grupo «Borna» con dos suscripciones de renovación automática:
+   `borna.mensual` (1 mes) y `borna.anual` (1 año), con su precio, nombre y descripción en español.
+3. App Store Connect → Usuarios y acceso → Integraciones → **Compras dentro de la app**: genera una clave y descarga el `.p8`.
+4. Supabase → Edge Functions → crea la función `apple` con `supabase/functions/apple/index.ts` y **Verify JWT desactivado**.
+   Secretos: `APPLE_IAP_KEY` (el texto del `.p8`), `APPLE_IAP_KEY_ID` y `APPLE_IAP_ISSUER_ID`.
+5. App Store Connect → Borna → Información de la app → **Notificaciones del servidor de App Store** (versión 2),
+   en producción y en pruebas: `https://<tu-proyecto>.supabase.co/functions/v1/apple`.
+6. Ejecuta otra vez `supabase.sql` (crea `registrar_apple`).
+7. Únete al programa **App Store Small Business** (Apple se queda el 15 % en lugar del 30 %).
+
+Para probarlo antes de publicar: TestFlight compra en modo pruebas (no cobra) y la función lo reconoce sola.
+Cada suscripción de Apple vale para una sola empresa. Al eliminar la cuenta, la suscripción de Apple se cancela
+en Ajustes del iPhone (Apple no deja cancelarla desde la app); la app lo avisa.
+
+La app de iPhone pide ahora **iOS 15** o posterior.
+
 ## Equipo
 
 El administrador invita por correo. La persona entra con ese correo y tiene que pulsar **Aceptar**.
