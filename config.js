@@ -4,7 +4,7 @@ window.ALMARA_CONFIG = {
   // Nombre comercial de la app (sale en la portada y en el título)
   producto: "Borna",
   // Correo o teléfono al que te escriben las empresas para activar la suscripción
-  soporte: "contacto@almara.group",
+  soporte: "bornainstalaciones@gmail.com",
   // Suscripción (Stripe). Mientras estén vacíos, la app pide escribir a «soporte».
   // Precio por empresa, técnicos incluidos (sin IVA)
   precioMensual: "19 € al mes",

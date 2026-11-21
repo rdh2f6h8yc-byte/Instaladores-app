@@ -1,0 +1,55 @@
+# Borna · compilación de la app de iPhone en Codemagic (Mac en la nube) y subida a TestFlight.
+# No hace falta tener un Mac: Codemagic coge este repositorio, empaqueta la web con Capacitor,
+# firma la app con tu cuenta de Apple y la sube a App Store Connect.
+#
+# Antes de la primera compilación (una sola vez):
+#   1. Apple Developer → Identifiers: crea el identificador group.almara.borna con «Push Notifications».
+#   2. App Store Connect → Mis apps → «+»: crea la app Borna con ese identificador.
+#   3. App Store Connect → Usuarios y acceso → Integraciones → claves de API: crea una clave con rol «App Manager»
+#      y descarga el archivo .p8.
+#   4. Codemagic → Team settings → Integrations → Developer Portal: añade esa clave con el nombre «Borna».
+#   5. Codemagic → Team settings → Code signing identities → iOS certificates: «Generate certificate» (App Store).
+#   6. Codemagic → añade este repositorio y lanza el workflow «Borna iOS → TestFlight».
+
+workflows:
+  ios-testflight:
+    name: Borna iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    integrations:
+      app_store_connect: Borna
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: group.almara.borna
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Instalar dependencias
+        script: npm ci
+      - name: Copiar la web y preparar el proyecto de iPhone
+        script: |
+          node scripts/copiar-www.mjs
+          npx cap sync ios
+      - name: Preparar la firma
+        script: xcode-project use-profiles
+      - name: Número de compilación
+        script: |
+          cd ios/App
+          agvtool new-version -all "$BUILD_NUMBER"
+      - name: Compilar la app
+        script: xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - bornainstalaciones@gmail.com
+        notify:
+          success: true
+          failure: true
