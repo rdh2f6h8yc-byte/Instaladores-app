@@ -38,13 +38,14 @@
         <button data-o="bajas">Paredes bajas</button>
         <button data-o="simb" class="on">Símbolos</button>
         <button data-o="cables">Cables</button>
+        <button data-o="techo" class="on">Techo</button>
         <button data-o="arriba">Desde arriba</button>
         <button data-o="centrar">Centrar</button>
-        <span class="v3d-alto">Techo <button data-o="a-">−</button><b>${fmt(alto)} m</b><button data-o="a+">+</button></span>
+        <span class="v3d-alto">Altura <button data-o="a-">−</button><b>${fmt(alto)} m</b><button data-o="a+">+</button></span>
       </div>`;
     document.body.appendChild(raiz);
     const cv = raiz.querySelector("canvas");
-    o = { cfg, pl, raiz, cv, cx: cv.getContext("2d"), alto, bajas: false, simb: true, cables: false,
+    o = { cfg, pl, raiz, cv, cx: cv.getContext("2d"), alto, bajas: false, simb: true, cables: false, techo: true,
       yaw: -0.6, pitch: 0.75, dist: 12, tx: 0, tz: 0, imgs: {}, punteros: new Map(), sucio: true };
     o.caja = limites(pl);
     raiz.querySelector(".v3d-vacio").hidden = !!pl.paredes.length || !!pl.items.length;
@@ -52,7 +53,7 @@
     raiz.querySelector(".v3d-x").onclick = cerrar;
     raiz.querySelector(".v3d-bar").onclick = (e) => {
       const b = e.target.closest("[data-o]"); if (!b) return; const k = b.dataset.o;
-      if (k === "bajas" || k === "simb" || k === "cables") { o[k] = !o[k]; b.classList.toggle("on", o[k]); }
+      if (k === "bajas" || k === "simb" || k === "cables" || k === "techo") { o[k] = !o[k]; b.classList.toggle("on", o[k]); }
       else if (k === "arriba") { o.pitch = 1.5; o.yaw = 0; }
       else if (k === "centrar") centrar();
       else if (k === "a-" || k === "a+") {
@@ -122,14 +123,15 @@
 
   function construir() {
     const pl = o.pl, H = o.bajas ? Math.min(1.1, o.alto) : o.alto, caras = [], extra = [];
-    const caja = (cx, cz, ux, uz, a0, a1, g, y0, y1, color) => { // a lo largo de (ux,uz) de a0 a a1, grosor g
+    const caja = (cx, cz, ux, uz, a0, a1, g, y0, y1, color, pared) => { // a lo largo de (ux,uz) de a0 a a1, grosor g
       if (a1 - a0 < .005 || y1 - y0 < .005) return;
       const nx = -uz * g / 2, nz = ux * g / 2;
       const P = (a, s, y) => [cx + ux * a + nx * s, y, cz + uz * a + nz * s];
       const v = [P(a0, -1, y0), P(a1, -1, y0), P(a1, 1, y0), P(a0, 1, y0), P(a0, -1, y1), P(a1, -1, y1), P(a1, 1, y1), P(a0, 1, y1)];
-      const f = (i, n) => caras.push({ p: i.map((k) => v[k]), n, color });
+      const f = (i, n, cara) => caras.push({ p: i.map((k) => v[k]), n, color, cara });
       f([4, 5, 6, 7], [0, 1, 0]); f([0, 3, 2, 1], [0, -1, 0]);
-      f([0, 1, 5, 4], [uz, 0, -ux]); f([2, 3, 7, 6], [-uz, 0, ux]);
+      f([0, 1, 5, 4], [uz, 0, -ux], pared && { w: pared, lado: -1, a0, a1, y0, y1 });
+      f([2, 3, 7, 6], [-uz, 0, ux], pared && { w: pared, lado: 1, a0, a1, y0, y1 });
       f([1, 2, 6, 5], [ux, 0, uz]); f([3, 0, 4, 7], [-ux, 0, -uz]);
     };
     // Paredes, con huecos de puertas y ventanas
@@ -153,7 +155,7 @@
         // tramos verticales sólidos = [0,H] menos los huecos que cubren este tramo
         let tramos = [[0, H]];
         for (const h of tapan) tramos = tramos.flatMap(([y0, y1]) => [[y0, Math.min(y1, h.y0)], [Math.max(y0, h.y1), y1]]).filter(([y0, y1]) => y1 - y0 > .005);
-        for (const [y0, y1] of tramos) caja(w.x1, w.y1, ux, uz, a0, a1, g, y0, y1, [236, 232, 222]);
+        for (const [y0, y1] of tramos) caja(w.x1, w.y1, ux, uz, a0, a1, g, y0, y1, [236, 232, 222], w);
         for (const h of tapan) if (h.t === "ventana" && h.y0 < H) // cristal
           extra.push({ cristal: true, p: [[w.x1 + ux * a0, h.y0, w.y1 + uz * a0], [w.x1 + ux * a1, h.y0, w.y1 + uz * a1], [w.x1 + ux * a1, Math.min(h.y1, H), w.y1 + uz * a1], [w.x1 + ux * a0, Math.min(h.y1, H), w.y1 + uz * a0]] });
       }
@@ -170,22 +172,21 @@
         }
       }
     }
-    // Símbolos
+    // Símbolos: pegados a la pared (como una placa), en el techo, en el suelo o, si están sueltos, de pie
     const simb = [];
     if (o.simb) for (const it of pl.items) {
       if (SIN_3D[it.t]) continue;
-      let x = it.x, z = it.y, y, enPared = null;
-      if (ARRIBA[it.t]) y = o.alto + .35;
-      else if (TECHO[it.t] || ALT[it.t] === undefined) y = o.alto - .02;
-      else y = Math.min(ALT[it.t], o.alto - .05);
-      if (!TECHO[it.t] && !ARRIBA[it.t]) {
-        const q = paredMasCercana(it, pl);
-        if (q && q.d < .45) { // pegado a la cara de la pared que mira al símbolo
-          let nx = -q.dy / q.L, nz = q.dx / q.L; if ((it.x - q.qx) * nx + (it.y - q.qy) * nz < 0) { nx = -nx; nz = -nz; }
-          const g = (q.w.g || .12) / 2 + .03; x = q.qx + nx * g; z = q.qy + nz * g; enPared = true;
-        }
-      }
-      simb.push({ it, p: [x, y, z], enPared });
+            if (ARRIBA[it.t]) { simb.push({ it, modo: "techo", c: [it.x, o.alto + .4, it.y], tam: .75 }); continue; }
+      if (TECHO[it.t] || ALT[it.t] === undefined) { simb.push({ it, modo: "techo", c: [it.x, o.alto - .01, it.y], tam: .65 }); continue; }
+      if (it.t === "suelo") { simb.push({ it, modo: "suelo", c: [it.x, .012, it.y], tam: .5 }); continue; }
+      const y = Math.max(.26, Math.min(ALT[it.t], o.alto - .3)), q = paredMasCercana(it, pl);
+      if (q && q.d < .45) {
+        let nx = -q.dy / q.L, nz = q.dx / q.L, lado = 1;
+        if ((it.x - q.qx) * nx + (it.y - q.qy) * nz < 0) { nx = -nx; nz = -nz; lado = -1; }
+        const g = (q.w.g || .12) / 2 + .006, ux = q.dx / q.L, uz = q.dy / q.L;
+        // «der» = la derecha de quien mira la pared desde ese lado
+        simb.push({ it, modo: "pared", w: q.w, lado, a: q.t * q.L, y, n: [nx, 0, nz], der: [nz, 0, -nx], c: [q.qx + nx * g, y, q.qy + nz * g] });
+      } else simb.push({ it, modo: "libre", c: [it.x, y, it.y] });
     }
     // Cables (por el techo, como se suelen tender)
     const cab = [];
@@ -194,7 +195,11 @@
       const y = Math.max(.1, (o.bajas ? H : o.alto) - .06);
       cab.push({ a: [c.x1, y, c.y1], b: [c.x2, y, c.y2], col });
     }
-    return { caras, extra, simb, cab, H };
+    let contorno = null;
+    if (pl.paredes.length) { let a = 1e9, b = 1e9, c = -1e9, d = -1e9;
+      for (const w of pl.paredes) for (const [x, y] of [[w.x1, w.y1], [w.x2, w.y2]]) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); }
+      contorno = { x: a, y: b, w: c - a, h: d - b }; }
+    return { caras, extra, simb, cab, H, contorno };
   }
 
   // ---------- Cámara y dibujo ----------
@@ -228,13 +233,22 @@
     for (let z = Math.ceil(k.y - m); z <= k.y + k.h + m; z++) linea3d(cx, vista, proy, [k.x - m, 0, z], [k.x + k.w + m, 0, z], CERCA);
 
     const L = norm([-.45, .8, -.35]), lista = [];
+    // Ejes del suelo según hacia dónde mira la cámara: así lo del techo y el suelo se lee derecho
+    const sDer = [Math.cos(o.yaw), 0, -Math.sin(o.yaw)], sFondo = [-Math.sin(o.yaw), 0, -Math.cos(o.yaw)];
+    const deCara = (cara) => g.simb.filter((s) => s.modo === "pared" && s.w === cara.w && s.lado === cara.lado &&
+      s.a >= cara.a0 - .01 && s.a <= cara.a1 + .01 && s.y >= cara.y0 - .01 && s.y <= cara.y1 + .01);
+    const usados = new Set();
     for (const c of g.caras) {
       const cen = media(c.p), dirOjo = [cen[0] - ojo[0], cen[1] - ojo[1], cen[2] - ojo[2]];
-      if (punto(dirOjo, c.n) >= 0) continue; // cara de espaldas
+      const pegados = c.cara ? deCara(c.cara) : []; pegados.forEach((x) => usados.add(x));
+      if (punto(dirOjo, c.n) >= 0) continue; // cara de espaldas (y lo que lleva pegado, tampoco se ve)
       const vs = c.p.map(vista), prof = vs.reduce((s, q) => s + q[2], 0) / vs.length;
       const luz = .62 + .38 * Math.max(0, punto(c.n, L)), arriba = c.n[1] > .5;
       const col = c.color.map((v) => Math.round(v * (arriba ? 1.04 : luz)));
-      lista.push({ prof, dib: () => poligono(cx, recortar(vs, CERCA).map(proy), arriba ? "#3A3833" : `rgb(${col})`, "rgba(22,22,22,.18)") });
+      lista.push({ prof, dib: () => {
+        poligono(cx, recortar(vs, CERCA).map(proy), arriba ? "#3A3833" : `rgb(${col})`, "rgba(22,22,22,.18)");
+        for (const sp of pegados) placa(cx, sp.it, sp.c, sp.der, [0, 1, 0], .48, vista, proy, CERCA);
+      } });
     }
     for (const c of g.extra) {
       const vs = c.p.map(vista), prof = vs.reduce((s, q) => s + q[2], 0) / vs.length;
@@ -244,19 +258,43 @@
       const a = vista(c.a), b = vista(c.b);
       lista.push({ prof: (a[2] + b[2]) / 2 - .05, dib: () => { cx.strokeStyle = c.col; cx.lineWidth = 2.5; cx.setLineDash([7, 5]); linea3d(cx, vista, proy, c.a, c.b, CERCA); cx.setLineDash([]); } });
     }
+    const techo = [];
     for (const s of g.simb) {
-      const q = vista(s.p); if (q[2] < CERCA * 2) continue;
-      const im = imagen(s.it), pix = Math.max(26, Math.min(96, .5 * F / q[2])), w = pix * im.ancho / im.alto, h = pix;
-      const [px, py] = proy(q);
-      lista.push({ prof: q[2] - .2, dib: () => {
-        // patita hasta el suelo o la pared para situarlo
-        const base = vista([s.p[0], s.enPared ? s.p[1] : 0, s.p[2]]);
-        if (!s.enPared && base[2] > CERCA) { const [bx, by] = proy(base); cx.strokeStyle = "rgba(22,22,22,.25)"; cx.lineWidth = 1; cx.setLineDash([3, 3]); cx.beginPath(); cx.moveTo(px, py); cx.lineTo(bx, by); cx.stroke(); cx.setLineDash([]); }
-        cx.fillStyle = "#161616"; cx.beginPath(); cx.arc(px, py, 2.5, 0, 6.3); cx.fill();
-        if (im.im.complete && im.im.naturalWidth) cx.drawImage(im.im, px - w / 2, py - h - 6, w, h);
-      } });
+      if (usados.has(s)) continue;
+      const q = vista(s.c); if (q[2] < CERCA * 2) continue;
+      if (s.modo === "techo" || s.modo === "suelo") {
+        const d = { prof: q[2] - .03, dib: () => placa(cx, s.it, s.c, sDer, sFondo, s.tam, vista, proy, CERCA) };
+        if (s.modo === "techo" && o.techo) techo.push(d); else lista.push(d);
+      } else if (s.modo === "pared") { // sin cara donde pegarse (p. ej. con paredes bajas): placa en su sitio
+        const d0 = [s.c[0] - ojo[0], s.c[1] - ojo[1], s.c[2] - ojo[2]];
+        if (punto(d0, s.n) < 0) lista.push({ prof: q[2] - .03, dib: () => placa(cx, s.it, s.c, s.der, [0, 1, 0], .48, vista, proy, CERCA) });
+      } else { // suelto en medio de la habitación: cartel de pie
+        const im = imagen(s.it), pix = Math.max(24, Math.min(80, .4 * F / q[2])), w = pix * im.ancho / im.alto, h = pix, [px, py] = proy(q);
+        lista.push({ prof: q[2] - .1, dib: () => {
+          cx.fillStyle = "#161616"; cx.beginPath(); cx.arc(px, py, 2.5, 0, 6.3); cx.fill();
+          if (im.im.complete && im.im.naturalWidth) cx.drawImage(im.im, px - w / 2, py - h - 4, w, h);
+        } });
+      }
     }
+    // Techo (opcional): por encima de todo si la cámara está más alta que él
+    const losa = () => { const b = g.contorno; if (!b) return;
+      const H = g.H, pts = [[b.x, H, b.y], [b.x + b.w, H, b.y], [b.x + b.w, H, b.y + b.h], [b.x, H, b.y + b.h]];
+      poligono(cx, recortar(pts.map(vista), CERCA).map(proy), "rgba(250,248,242,.45)", "rgba(22,22,22,.25)"); };
+    const encima = ojo[1] > g.H;
+    if (o.techo && !encima) losa();
     lista.sort((a, b) => b.prof - a.prof).forEach((x) => x.dib());
+    if (o.techo && encima) losa();
+    techo.sort((a, b) => b.prof - a.prof).forEach((x) => x.dib());
+  }
+
+  function placa(cx, it, c, ejeX, ejeY, altoM, vista, proy, cerca) {
+    const im = imagen(it); if (!im.im.complete || !im.im.naturalWidth) return;
+    const anchoM = altoM * im.ancho / im.alto, hx = anchoM / 2, hy = altoM / 2;
+    const P = (sx, sy) => [c[0] + ejeX[0] * sx + ejeY[0] * sy, c[1] + ejeX[1] * sx + ejeY[1] * sy, c[2] + ejeX[2] * sx + ejeY[2] * sy];
+    const v = [P(-hx, hy), P(hx, hy), P(-hx, -hy)].map(vista); if (v.some((q) => q[2] < cerca)) return;
+    const [a, b, d] = v.map(proy), iw = im.im.naturalWidth, ih = im.im.naturalHeight;
+    cx.save(); cx.transform((b[0] - a[0]) / iw, (b[1] - a[1]) / iw, (d[0] - a[0]) / ih, (d[1] - a[1]) / ih, a[0], a[1]);
+    cx.drawImage(im.im, 0, 0); cx.restore();
   }
 
   function linea3d(cx, vista, proy, a, b, cerca) {
