@@ -63,3 +63,4 @@ h3 .mas{color:#161616;text-decoration:underline;text-decoration-color:var(--amar
 #acceso #bOlvido,#acceso #bBorrarAlta{color:#A8A49A!important}
 #acceso #bModo,#acceso #bSalirAlta{color:var(--amarillo)!important}
 #acceso #altaTxt,#acceso form p{color:#D6D3CB!important}
+#inicio header .nube small{color:#A8A49A;text-transform:none;letter-spacing:0;font-weight:500}

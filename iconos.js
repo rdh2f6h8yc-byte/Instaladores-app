@@ -73,6 +73,12 @@
   let pendientes = [], programado = false;
   function procesar() { programado = false; const l = pendientes; pendientes = []; l.forEach(recorrer); }
   function arrancar() {
+    // Tamaño base de los iconos también en páginas sin tema.css (presupuesto público y formulario de contacto)
+    if (!document.getElementById("emo-css")) {
+      const st = document.createElement("style"); st.id = "emo-css";
+      st.textContent = ".emo{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;flex:none}";
+      document.head.prepend(st);
+    }
     recorrer(document.body);
     new MutationObserver((ms) => {
       for (const m of ms) {
