@@ -169,6 +169,13 @@ window.Nube = (() => {
   // Elimina la cuenta para siempre. Si es el administrador, también la empresa entera con todos sus datos.
   async function eliminarCuenta() {
     const p0 = perfil(); if (p0 && (p0.rol === "tecnico" || p0.rol === "baja")) return "solo_admin";
+    // Antes de borrar nada, cancela la suscripción de Stripe para que no se siga cobrando
+    const pf0 = perfil() || {};
+    if (esAdmin() && pf0.pagado_hasta && Date.parse(pf0.pagado_hasta) > Date.now()) {
+      const rc = await pedir("/functions/v1/stripe?accion=cancelar", { method: "POST", headers: await cab({ "Content-Type": "application/json" }), body: "{}" }, 20000);
+      const jc = await rc.json().catch(() => ({}));
+      if (!rc.ok || !jc.ok) return "no_cancelada";
+    }
     const yo = sesion().user.id, carpetas = [yo];
     if (esAdmin()) { try { (await equipo()).forEach(m => { if (!carpetas.includes(m.user_id)) carpetas.push(m.user_id); }); } catch (e) {} }
     // Las fotos se borran antes: una vez eliminada la cuenta ya no hay permiso para hacerlo

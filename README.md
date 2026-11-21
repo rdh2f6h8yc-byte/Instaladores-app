@@ -51,6 +51,9 @@ hasta la que tiene acceso (fin del periodo pagado más 2 días de margen). Nunca
 5. Stripe → **Ajustes → Portal de clientes** → actívalo (cambiar tarjeta, facturas y cancelar).
    El botón de la app abre ese portal con la sesión del administrador. No hace falta pegar ningún enlace.
 
+Si usas una clave restringida (`rk_…`), necesita permiso de **escritura** en suscripciones y en el portal de clientes:
+al eliminar una cuenta, la función cancela su suscripción antes de borrar nada.
+
 Las claves `sk_…` y `whsec_…` no se guardan nunca en este repositorio.
 Si alguien paga sin pasar por la app (sin la referencia de su empresa), hay que activarlo a mano.
 
@@ -85,8 +88,15 @@ npx cap sync
 
 - **Android**: `npx cap open android`, en Android Studio **Build → Generate Signed Bundle**, y sube el `.aab` a Play Console.
   Ficha: nombre Borna, categoría Empresas, política de privacidad `https://instaladoresapp.vercel.app/privacidad/`.
-- **iPhone**: `npx cap open ios` en un Mac, firma con tu equipo de Apple, **Product → Archive** y súbelo con Transporter o Xcode a App Store Connect.
+- **iPhone (sin Mac)**: se compila en [Codemagic](https://codemagic.io) con `codemagic.yaml`. Los pasos de una sola vez
+  están al principio de ese archivo. Después, en Codemagic, **Start new build → Borna iOS → TestFlight**: compila,
+  firma y sube la app a TestFlight. Desde App Store Connect se envía a revisión.
+- **iPhone (con Mac)**: `npx cap open ios`, firma con tu equipo de Apple, **Product → Archive** y súbelo con Transporter o Xcode.
   La misma URL de privacidad, clasificación 4+, y capturas del iPhone.
+
+**Pagos en la app de las tiendas.** Dentro de la app instalada desde App Store o Play Store no salen precios,
+botones de pago ni el portal de Stripe: las tiendas exigen su propio cobro para eso. La empresa se suscribe y
+gestiona el pago en la web; en la app solo inicia sesión. Al eliminar la cuenta, la suscripción se cancela sola.
 
 Apple y Google revisan a mano: no es un envío automático desde aquí. La app funciona sin conexión con lo último
 que se guardó en el móvil, que es lo que piden para no ser solo un acceso directo a la web.

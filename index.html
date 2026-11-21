@@ -237,8 +237,8 @@ function pintarInicio(){
   const h=new Date().getHours(),pf=Nube.perfil()||{},adm=Nube.esAdmin(),vc=Nube.verComo();
   $("saludo").textContent=vc?"Datos de "+vc.nombre:(h<13?"Buenos días":h<21?"Buenas tardes":"Buenas noches")+(pf.nombre?", "+pf.nombre:"");
   $("empNom").textContent=pf.empresa||PRODUCTO;$("bForm").hidden=!adm||!Nube.configurado()||!pf.empresa_id;$("bAvisos").hidden=!Nube.configurado();
-  const dp=Nube.diasPrueba();$("avisoPlan").innerHTML=!Nube.activa()?`<div class="estadoAv" style="background:#FDECEC;margin-top:14px"><b>Tu periodo de prueba ha terminado.</b> Puedes ver tus datos, pero no se guardan cambios nuevos.${adm?" Escríbenos para activar la suscripción"+(CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":"")+".":" Avisa a tu administrador."}</div>`
-    :dp!==null&&dp<=2?`<div class="estadoAv" style="background:#FFF8EC;margin-top:14px">Te queda${dp===1?"":"n"} <b>${Math.max(dp,0)} día${dp===1?"":"s"}</b> de prueba.${adm&&CFG.soporte?" Para seguir después, escríbenos: <b>"+esc(CFG.soporte)+"</b>":""}</div>`:"";
+  const dp=Nube.diasPrueba(),app=enApp();$("avisoPlan").innerHTML=!Nube.activa()?`<div class="estadoAv" style="background:#FDECEC;margin-top:14px"><b>Tu periodo de prueba ha terminado.</b> Puedes ver tus datos, pero no se guardan cambios nuevos.${app?"":adm?" Escríbenos para activar la suscripción"+(CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":"")+".":" Avisa a tu administrador."}</div>`
+    :dp!==null&&dp<=2?`<div class="estadoAv" style="background:#FFF8EC;margin-top:14px">Te queda${dp===1?"":"n"} <b>${Math.max(dp,0)} día${dp===1?"":"s"}</b> de prueba.${!app&&adm&&CFG.soporte?" Para seguir después, escríbenos: <b>"+esc(CFG.soporte)+"</b>":""}</div>`:"";
   $("tCon").hidden=$("tEst").hidden=!adm;$("bEquipo").hidden=!adm||!Nube.configurado();
   const cl=(lee("almara-clientes-v1")||{}).clientes||[],pl=(lee("almara-planos-v1")||{}).proy||[],pr=(lee("almara-pres-v1")||{}).lista||[];
   if(cl.length)$("nCli").textContent=cl.length+" cliente"+(cl.length>1?"s":"");
@@ -308,6 +308,9 @@ function textoBorrado(e){const m=String(e&&e.message||e||"");
 $("bSalirAlta").onclick=cerrar;
 $("bSalir").onclick=cerrar;
 // ---------- Cuenta, suscripción y eliminar la cuenta ----------
+// En la app de App Store / Play Store no se muestran precios, botones de pago ni enlaces a Stripe:
+// las tiendas exigen su propio sistema de cobro. La suscripción se contrata y se gestiona en la web.
+const enApp=()=>!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
 const fechaL=t=>t?new Date(t).toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"}):"";
 function enlacePago(u,pf,ses){try{const x=new URL(u);if(pf.empresa_id)x.searchParams.set("client_reference_id",pf.empresa_id);if(ses&&ses.user&&ses.user.email)x.searchParams.set("prefilled_email",ses.user.email);return x.href}catch(e){return""}}
 function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nube.esAdmin(),ahora=Date.now();
@@ -318,6 +321,7 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
   const pagoM=CFG.pagoMensual?enlacePago(CFG.pagoMensual,pf,ses):"",pagoA=CFG.pagoAnual?enlacePago(CFG.pagoAnual,pf,ses):"",precios=[CFG.precioMensual,CFG.precioAnual].filter(Boolean).join(" o ");
   let sus="";
   if(!adm)sus=`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:10px 0 0">La suscripción la lleva el administrador de tu empresa.</p>`;
+  else if(enApp()){}
   else{
     if(!pagada)sus+=(pagoM||pagoA)?(pagoM?`<a class="bt az" href="${esc(pagoM)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px">Suscripción mensual${CFG.precioMensual?" · "+esc(CFG.precioMensual):""}</a>`:"")
         +(pagoA?`<a class="bt az" href="${esc(pagoA)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:8px">Suscripción anual${CFG.precioAnual?" · "+esc(CFG.precioAnual):""}</a>`:"")
@@ -325,7 +329,7 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
       :`<p style="font-size:14.5px;line-height:1.45;margin:10px 0 0">Para suscribirte${precios?" ("+esc(precios)+", por empresa y sin IVA)":""}, escríbenos${CFG.soporte?": <b>"+esc(CFG.soporte)+"</b>":""} y te la activamos.</p>`;
     if(pagada)sus+=`<button class="bt" id="ctPortal" type="button" style="display:block;width:100%;text-align:center;margin-top:10px">Cambiar tarjeta, ver facturas o cancelar</button><small style="color:var(--gris);display:block;margin-top:6px">Si cancelas al final del periodo, sigues dentro hasta el ${fechaL(pf.pagado_hasta)} y no se cobra más. Si la cancelas al momento, el acceso se cierra ese día.</small><div id="ctPortalRes" style="font-size:13.5px;margin-top:6px;color:var(--gris)"></div>`;
   }
-  const borrar=adm?`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:0 0 8px">Se borra <b>para siempre</b> tu cuenta y la empresa <b>${esc(pf.empresa||"")}</b> entera: clientes, planos, presupuestos, partes, fotos y contactos, también los de tus técnicos. No se puede deshacer${pagada?", y antes conviene cancelar la suscripción para que no se te siga cobrando":""}.</p>
+  const borrar=adm?`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:0 0 8px">Se borra <b>para siempre</b> tu cuenta y la empresa <b>${esc(pf.empresa||"")}</b> entera: clientes, planos, presupuestos, partes, fotos y contactos, también los de tus técnicos. No se puede deshacer${pagada?". La suscripción se cancela en ese momento y no se vuelve a cobrar":""}.</p>
       <input id="ctConf" autocomplete="off" autocapitalize="characters" placeholder="Escribe ELIMINAR para confirmar" style="display:block;width:100%;padding:11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px">
       <button class="bt" id="ctBorrar" style="margin-top:8px;color:#B3261E;border-color:#E9B8B4">Eliminar la cuenta y la empresa</button><div id="ctRes" style="font-size:13.5px;margin-top:6px;color:#B3261E"></div>`
     :`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:0">Tu cuenta pertenece a la empresa <b>${esc(pf.empresa||"")}</b>. Para darte de baja, pídeselo a tu administrador: lo hace desde <b>Equipo</b> y los trabajos que has registrado se quedan en la empresa.</p>`;
@@ -335,7 +339,7 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
   if($("ctBorrar"))$("ctBorrar").onclick=async()=>{const res=$("ctRes");if($("ctConf").value.trim().toUpperCase()!=="ELIMINAR"){res.textContent="Escribe ELIMINAR en la casilla para confirmar.";return}
     if(!navigator.onLine){res.textContent="Necesitas conexión para eliminar la cuenta.";return}
     $("ctBorrar").disabled=true;$("ctBorrar").textContent="Eliminando…";
-    try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}res.textContent=r==="solo_admin"?"Solo el administrador puede eliminar la empresa.":"No se ha podido eliminar: "+r}
+    try{const r=await Nube.eliminarCuenta();if(r==="ok"){location.replace("/");return}res.textContent=r==="solo_admin"?"Solo el administrador puede eliminar la empresa.":r==="no_cancelada"?"No se ha podido cancelar la suscripción, así que no se ha borrado nada. Inténtalo de nuevo"+(CFG.soporte?" o escríbenos: "+CFG.soporte:"")+".":"No se ha podido eliminar: "+r}
     catch(e){res.textContent=textoBorrado(e)}
     $("ctBorrar").disabled=false;$("ctBorrar").textContent="Eliminar la cuenta y la empresa"}}
   if($("ctPortal"))$("ctPortal").onclick=async()=>{const res=$("ctPortalRes");res.textContent="Abriendo Stripe…";$("ctPortal").disabled=true;
