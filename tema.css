@@ -1,0 +1,65 @@
+/* Borna · tema «Obra»: negro y amarillo de señalización, como el logo.
+   Se carga después de los estilos de cada página y solo cambia colores y acabados. */
+:root{--azul:#161616;--acento:#161616;--gris:#5C5A55;--claro:#EFEDE7;--fondo:#F4F2EC;--borde:#DCD9D0;--rojo:#D02B20;--nar:#B35F00;--verde:#2E8B4E;--amarillo:#FFD400}
+html,body{background:var(--fondo)}
+
+/* Iconos (sustituyen a los emojis) */
+.emo{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;flex:none}
+.ic .emo,.mas .emo,.ib .emo{width:1.2em;height:1.2em;vertical-align:middle}
+
+/* Cabeceras: negras con la franja de obra */
+header{background:#161616;position:relative}
+header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:repeating-linear-gradient(-45deg,var(--amarillo) 0 9px,#161616 9px 18px)}
+header small{color:var(--amarillo);opacity:1;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+
+/* Botones y controles */
+.btn.az,.bt.az,.fab{background:#161616;color:var(--amarillo)}
+.fab{box-shadow:4px 4px 0 var(--amarillo);border:2px solid #161616}
+.btn{background:var(--claro)}
+.chips button.on{background:#161616;color:var(--amarillo);border-color:#161616}
+.mini{color:#161616;background:var(--amarillo)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#161616;box-shadow:0 0 0 3px rgba(255,212,0,.55)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px}
+h3{color:#161616;font-weight:850;letter-spacing:.12em}
+h3 .mas{color:#161616;text-decoration:underline;text-decoration-color:var(--amarillo);text-decoration-thickness:3px;text-underline-offset:3px}
+.tag.a{background:#FFF4B8;color:#161616}
+.card{border-color:var(--borde)}
+.velo{background:rgba(22,22,22,.5)}
+#aviso{background:rgba(22,22,22,.94)}
+
+/* ---------- Portada (index): acceso ---------- */
+#acceso{background:#161616;position:relative}
+#acceso::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:repeating-linear-gradient(-45deg,var(--amarillo) 0 14px,#161616 14px 28px)}
+#acceso .marca p{color:var(--amarillo);font-weight:700}
+#acceso form label,#acceso .pie,#acceso .pie a{color:#A8A49A!important}
+#acceso form input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18)}
+#acceso form input:focus{border-color:var(--amarillo);background:rgba(255,255,255,.1);box-shadow:none}
+#acceso .entrar{background:var(--amarillo);color:#161616}
+#acceso .ver button{color:#A8A49A}
+
+/* ---------- Portada (index): inicio ---------- */
+#inicio header{padding-bottom:34px;overflow:hidden}
+#inicio header::after{height:8px;background:repeating-linear-gradient(-45deg,var(--amarillo) 0 12px,#161616 12px 24px)}
+#inicio header h2{font-size:28px;font-weight:850;letter-spacing:-.01em}
+#inicio header .nube{color:#A8A49A}
+#inicio main{margin-top:-10px}
+.rapidas{background:#fff;border:2px solid #161616;border-radius:14px;box-shadow:4px 4px 0 #161616;padding:14px 8px}
+.rapidas .mas{background:var(--amarillo);color:#161616;border-radius:12px}
+.rapidas .mas i{background:#161616;color:var(--amarillo);border-color:#fff}
+.busca input{border:2px solid var(--borde);border-radius:12px}
+.busca input:focus{border-color:#161616;box-shadow:0 0 0 3px rgba(255,212,0,.55)}
+.alerta{background:#fff;border:2px solid #161616;border-left:10px solid var(--amarillo);border-radius:12px}
+.alerta a{border-top-color:var(--claro)}
+.alerta a>span:first-child{display:block;padding-left:28px;position:relative}
+.alerta a>span:first-child>.emo,.alerta a>span:first-child>.emo-tx>.emo:first-child{position:absolute;left:0;top:.1em;width:20px;height:20px}
+.lista{border:1px solid var(--borde);border-radius:14px;box-shadow:none}
+.lista .ic{background:var(--claro)!important;color:#161616;border-radius:10px}
+.lista>a[href="/clientes/"] .ic{background:var(--amarillo)!important}
+.lista b{font-weight:800}
+.lista .bd{background:var(--rojo)}.lista .bd.nar{background:#161616;color:var(--amarillo)}
+.lista .fl{border-color:#161616}
+.pasos{box-shadow:none}.pasos .hecho .ck{background:var(--verde);border-color:var(--verde)}
+.paso .n{background:#161616;color:var(--amarillo)}
+#acceso #bOlvido,#acceso #bBorrarAlta{color:#A8A49A!important}
+#acceso #bModo,#acceso #bSalirAlta{color:var(--amarillo)!important}
+#acceso #altaTxt,#acceso form p{color:#D6D3CB!important}

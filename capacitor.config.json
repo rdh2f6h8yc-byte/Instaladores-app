@@ -2,7 +2,7 @@
   "appId": "group.almara.borna",
   "appName": "Borna",
   "webDir": "www",
-  "backgroundColor": "#0B1F3A",
+  "backgroundColor": "#161616",
   "server": {
     "androidScheme": "https",
     "iosScheme": "https"
@@ -10,12 +10,12 @@
   "plugins": {
     "SplashScreen": {
       "launchAutoHide": true,
-      "backgroundColor": "#0B1F3A",
+      "backgroundColor": "#161616",
       "showSpinner": false
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#0B1F3A"
+      "backgroundColor": "#161616"
     }
   }
 }
