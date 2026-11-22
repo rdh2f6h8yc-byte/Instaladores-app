@@ -11,6 +11,9 @@ window.ALMARA_CONFIG = {
   precioAnual: "190 € al año (2 meses gratis)",
   pagoMensual: "https://buy.stripe.com/cNi3co02F0cN4EcaDc1wY00",  // enlace de pago de Stripe (Payment Link) de la suscripción mensual
   pagoAnual: "https://buy.stripe.com/28E7sEcPrf7HgmU5iS1wY01",    // enlace de pago de Stripe de la suscripción anual
+  // Suscripción dentro de la app de iPhone (App Store Connect → Suscripciones). El precio se pone allí.
+  appleMensual: "borna.mensual",
+  appleAnual: "borna.anual",
   // Dirección pública. Los enlaces que se envían a clientes (presupuesto, contacto) salen de aquí,
   // también cuando la app está instalada desde la tienda.
   webUrl: "https://instaladoresapp.vercel.app",

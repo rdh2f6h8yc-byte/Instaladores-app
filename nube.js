@@ -366,7 +366,15 @@ window.Nube = (() => {
     if (!r.ok) throw new Error(j.error || ("HTTP " + r.status));
     return j;
   }
+  // Llama a una función del servidor (Edge Function) con la sesión. Devuelve su JSON o lanza el error que dé.
+  async function funcion(nombre, cuerpo, ms = 30000) {
+    if (!configurado() || !sesion()) throw new Error("Sin sesión");
+    const r = await pedir("/functions/v1/" + nombre, { method: "POST", headers: await cab({ "Content-Type": "application/json" }), body: JSON.stringify(cuerpo || {}) }, ms);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(j.error || ("HTTP " + r.status)); e.codigo = j.codigo || ""; throw e; }
+    return j;
+  }
   return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, recuperar, aplicarEnlace, nuevaClave, crearEmpresa, eliminarCuenta, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
-    api, rpcPublica, abrirPortal, avisar, webUrl, waNum, srcImagen, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
+    api, rpcPublica, abrirPortal, avisar, funcion, webUrl, waNum, srcImagen, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
     clientes, estado: () => est, CLAVES };
 })();

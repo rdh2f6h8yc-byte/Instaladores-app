@@ -694,3 +694,63 @@ update public.empresas
 -- CÓMO ACTIVAR A UNA EMPRESA QUE HA PAGADO (hasta que el cobro sea automático)
 --   update public.empresas set pagado_hasta = now() + interval '1 year' where nombre = 'Nombre de la empresa';
 -- =====================================================================
+
+-- =====================================================================
+-- 10) PRESUPUESTO CON IA (foto + voz)
+-- La función «ia» llama a usar_ia() con la sesión de quien la pide: solo con la empresa
+-- activa (prueba o suscripción) y con un máximo diario por empresa, para que el gasto de IA no se dispare.
+-- =====================================================================
+create table if not exists public.ia_uso (
+  empresa_id uuid not null references public.empresas(id) on delete cascade,
+  dia date not null default current_date,
+  usos int not null default 0,
+  primary key (empresa_id, dia)
+);
+alter table public.ia_uso enable row level security;
+
+create or replace function public.usar_ia(p_max int default 40) returns text
+language plpgsql security definer set search_path = public as $$
+declare v_emp uuid := public.mi_empresa(); v_usos int;
+begin
+  if auth.uid() is null or v_emp is null then return 'sin_empresa'; end if;
+  if not public.empresa_activa() then return 'inactiva'; end if;
+  insert into public.ia_uso (empresa_id, dia, usos) values (v_emp, current_date, 1)
+  on conflict (empresa_id, dia) do update set usos = public.ia_uso.usos + 1
+  returning usos into v_usos;
+  if v_usos > least(greatest(coalesce(p_max, 40), 1), 200) then return 'limite'; end if;
+  return 'ok';
+end $$;
+revoke all on function public.usar_ia(int) from public, anon;
+grant execute on function public.usar_ia(int) to authenticated;
+
+-- =====================================================================
+-- 11) SUSCRIPCIÓN DESDE LA APP DE IPHONE (compra dentro de la app, App Store)
+-- La función «apple» comprueba cada compra con Apple y llama a registrar_apple.
+-- appAccountToken de la compra = id de la empresa; así cada pago va a su empresa.
+-- =====================================================================
+alter table public.empresas add column if not exists apple_original text;
+create unique index if not exists empresas_apple_original on public.empresas (apple_original) where apple_original is not null;
+
+create or replace function public.registrar_apple(p_empresa uuid, p_original text, p_hasta timestamptz, p_estado text) returns text
+language plpgsql security definer set search_path = public as $$
+declare v_id uuid;
+begin
+  if p_original is not null then
+    select id into v_id from public.empresas where apple_original = p_original limit 1; end if;
+  if v_id is null and p_empresa is not null then
+    select id into v_id from public.empresas where id = p_empresa; end if;
+  if v_id is null then return 'sin_empresa'; end if;
+  update public.empresas
+     set apple_original = coalesce(apple_original, p_original),
+         pagado_hasta = case
+           when p_estado = 'active' and p_hasta is not null
+             then greatest(coalesce(pagado_hasta, p_hasta), p_hasta)
+           when p_estado in ('expired', 'revoked')
+             then least(coalesce(pagado_hasta, coalesce(p_hasta, now())), coalesce(p_hasta, now()))
+           else pagado_hasta
+         end
+   where id = v_id;
+  return 'ok';
+end $$;
+revoke all on function public.registrar_apple(uuid, text, timestamptz, text) from public, anon, authenticated;
+grant execute on function public.registrar_apple(uuid, text, timestamptz, text) to service_role;
