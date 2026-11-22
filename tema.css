@@ -38,11 +38,11 @@ h3 .mas{color:#161616;text-decoration:underline;text-decoration-color:var(--amar
 #acceso .ver button{color:#A8A49A}
 
 /* ---------- Portada (index): inicio ---------- */
-#inicio header{padding-bottom:34px;overflow:hidden}
+#inicio header{padding-bottom:26px;overflow:hidden}
 #inicio header::after{height:8px;background:repeating-linear-gradient(-45deg,var(--amarillo) 0 12px,#161616 12px 24px)}
 #inicio header h2{font-size:28px;font-weight:850;letter-spacing:-.01em}
 #inicio header .nube{color:#A8A49A}
-#inicio main{margin-top:-10px}
+#inicio main{padding-top:18px}
 .rapidas{background:#fff;border:2px solid #161616;border-radius:14px;box-shadow:4px 4px 0 #161616;padding:14px 8px}
 .rapidas .mas{background:var(--amarillo);color:#161616;border-radius:12px}
 .rapidas .mas i{background:#161616;color:var(--amarillo);border-color:#fff}
