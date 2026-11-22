@@ -326,7 +326,7 @@ function pintarCuenta(){const pf=Nube.perfil()||{},ses=Nube.sesion()||{},adm=Nub
   const pagoM=CFG.pagoMensual?enlacePago(CFG.pagoMensual,pf,ses):"",pagoA=CFG.pagoAnual?enlacePago(CFG.pagoAnual,pf,ses):"",precios=[CFG.precioMensual,CFG.precioAnual].filter(Boolean).join(" o ");
   let sus="";
   if(!adm)sus=`<p style="color:var(--gris);font-size:14px;line-height:1.45;margin:10px 0 0">La suscripción la lleva el administrador de tu empresa.</p>`;
-  else if(enApp()){sus=Compra?`<div id="ctApple" style="margin-top:10px;font-size:14px;color:var(--gris)">Cargando precios de App Store…</div>`:""}
+  else if(enApp()){sus=Compra?`<div id="ctApple" style="margin-top:10px;font-size:14px;color:var(--gris)">Cargando precios de App Store…</div>`:`<p style="color:var(--gris);font-size:14px;margin:10px 0 0">La compra dentro de la app no está disponible en esta versión. Actualiza la app.</p>`}
   else{
     if(!pagada)sus+=(pagoM||pagoA)?(pagoM?`<a class="bt az" href="${esc(pagoM)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:10px">Suscripción mensual${CFG.precioMensual?" · "+esc(CFG.precioMensual):""}</a>`:"")
         +(pagoA?`<a class="bt az" href="${esc(pagoA)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:8px">Suscripción anual${CFG.precioAnual?" · "+esc(CFG.precioAnual):""}</a>`:"")
