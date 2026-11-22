@@ -45,10 +45,15 @@ function carga(jws: unknown): Record<string, unknown> {
 // Token para la App Store Server API (ES256 con la clave .p8)
 async function tokenApple() {
   const pem = (Deno.env.get("APPLE_IAP_KEY") || "").replace(/-----[^-]+-----/g, "").replace(/\\n/g, "").replace(/\s/g, "");
-  const kid = Deno.env.get("APPLE_IAP_KEY_ID") || "", iss = Deno.env.get("APPLE_IAP_ISSUER_ID") || "";
+  const kid = (Deno.env.get("APPLE_IAP_KEY_ID") || "").trim(), iss = (Deno.env.get("APPLE_IAP_ISSUER_ID") || "").trim();
   if (!pem || !kid || !iss) throw new Error("Faltan los secretos APPLE_IAP_KEY, APPLE_IAP_KEY_ID o APPLE_IAP_ISSUER_ID");
+  // Comprobaciones de formato para que un secreto mal copiado dé un mensaje claro (sin mostrar su valor)
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(iss)) throw new Error("APPLE_IAP_ISSUER_ID no es un Issuer ID (debe ser un código largo con guiones)");
+  if (!/^[A-Z0-9]{10}$/.test(kid)) throw new Error("APPLE_IAP_KEY_ID no parece un Key ID (10 letras y números)");
   const der = Uint8Array.from(atob(pem), (c) => c.charCodeAt(0));
-  const clave = await crypto.subtle.importKey("pkcs8", der, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  let clave: CryptoKey;
+  try { clave = await crypto.subtle.importKey("pkcs8", der, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]); }
+  catch (_e) { throw new Error("APPLE_IAP_KEY no es una clave .p8 válida (copia el archivo entero)"); }
   const ahora = Math.floor(Date.now() / 1000);
   const datos = b64url(JSON.stringify({ alg: "ES256", kid, typ: "JWT" })) + "." +
     b64url(JSON.stringify({ iss, iat: ahora, exp: ahora + 1200, aud: "appstoreconnect-v1", bid: BUNDLE() }));
@@ -64,6 +69,10 @@ async function estadoEnApple(transaccion: string): Promise<Estado | null> {
   for (const [entorno, base] of [["produccion", "https://api.storekit.itunes.apple.com"], ["pruebas", "https://api.storekit-sandbox.itunes.apple.com"]]) {
     const r = await fetch(base + "/inApps/v1/subscriptions/" + encodeURIComponent(transaccion), { headers: { Authorization: "Bearer " + tok } });
     if (r.status === 404) continue;
+    // Mientras la app no está publicada, el entorno de producción responde 401 aunque la clave esté bien:
+    // en ese caso se pregunta al de pruebas, y solo si allí también falla es un problema de la clave.
+    if (r.status === 401 && entorno === "produccion") continue;
+    if (r.status === 401) throw new Error("Apple responde 401: no acepta la clave. Revisa que APPLE_IAP_KEY sea el .p8 de la clave de compras, APPLE_IAP_KEY_ID su Key ID y APPLE_IAP_ISSUER_ID el Issuer ID");
     if (!r.ok) throw new Error("Apple responde " + r.status + " " + (await r.text()).slice(0, 200));
     const j = await r.json();
     if (j.bundleId && j.bundleId !== BUNDLE()) throw new Error("La compra es de otra app");
