@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#0B1F3A">
+<meta name="theme-color" content="#161616">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -77,7 +77,18 @@ nav button.on{color:#fff;background:rgba(255,255,255,.14)}
 .modo{display:inline-flex;background:rgba(255,255,255,.12);border-radius:9px;padding:2px;margin-bottom:3px}
 .modo button{color:#B8C7DA;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:7px}
 .modo button.on{background:#fff;color:var(--azul)}
-#app.mpres #tabs,#app.mpres #lienzo,#app.mpres #panel,#app.mpres nav,#app.mpres #bUndo,#app.mpres #bRedo,#app.mpres #bExp,#app.mpres #bProy{display:none}
+#app.mpres #tabs,#app.mpres #lienzo,#app.mpres #panel,#app.mpres nav,#app.mpres #bUndo,#app.mpres #bRedo,#app.mpres #bExp,#app.mpres #b3d,#app.mpres #bProy{display:none}
+#b3d{font-size:13px;font-weight:900;letter-spacing:.02em;width:auto;padding:0 9px;border:1.5px solid currentColor;height:30px;border-radius:8px;margin:0 2px}
+.v3d{position:fixed;inset:0;z-index:60;background:#F4F2EC;display:flex;flex-direction:column}
+.v3d-cab{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 10px 10px 16px;background:#161616;color:#fff;font-size:16px}
+.v3d-cab b{flex:1}.v3d-x{background:none;border:0;color:#fff;font-size:28px;width:44px;height:44px;cursor:pointer}
+.v3d canvas{flex:1;min-height:0;width:100%;touch-action:none;display:block}
+.v3d-ayuda{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 70px);text-align:center;font-size:12.5px;color:#5C5A55;pointer-events:none}
+.v3d-vacio{position:absolute;inset:40% 20px auto;text-align:center;font-weight:700;color:#5C5A55}
+.v3d-bar{display:flex;gap:6px;overflow-x:auto;padding:10px 10px calc(env(safe-area-inset-bottom,0px) + 10px);background:#fff;border-top:1px solid #DCD9D0;scrollbar-width:none;align-items:center}
+.v3d-bar>button,.v3d-alto button{flex:none;border:1px solid #DCD9D0;background:#fff;border-radius:16px;padding:8px 12px;font:inherit;font-size:13.5px;font-weight:700;color:#161616;cursor:pointer}
+.v3d-bar>button.on{background:#161616;color:#FFD400;border-color:#161616}
+.v3d-alto{flex:none;display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;padding-left:4px}.v3d-alto button{padding:6px 11px}
 #pres{display:none;flex:1;overflow:auto;background:#F3F6FA;-webkit-overflow-scrolling:touch;position:relative}
 #app.mpres #pres{display:block}
 .pcont{padding:12px 12px calc(var(--sb) + 20px);max-width:680px;margin:0 auto}
@@ -133,6 +144,8 @@ nav button.on{color:#fff;background:rgba(255,255,255,.14)}
   #print svg{width:100%;height:auto;max-height:190mm;page-break-after:always;break-after:page}
 }
 </style>
+<link rel="stylesheet" href="/tema.css">
+<script src="/iconos.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -142,6 +155,7 @@ nav button.on{color:#fff;background:rgba(255,255,255,.14)}
     <div class="tit"><div class="modo"><button data-m="planos" class="on">Planos</button><button data-m="pres">Presupuestos</button></div><span id="nubeEst" style="font-size:13px;margin-left:6px;color:#8FA3BC" title="">☁︎</span><b id="nomProy">—</b></div>
     <button class="ib" id="bUndo" title="Deshacer">↶</button>
     <button class="ib" id="bRedo" title="Rehacer">↷</button>
+    <button class="ib" id="b3d" title="Ver en 3D" aria-label="Ver el plano en 3D">3D</button>
     <button class="ib" id="bExp" title="Exportar">⇪</button>
   </header>
   <div id="tabs"></div>
@@ -211,6 +225,7 @@ nav button.on{color:#fff;background:rgba(255,255,255,.14)}
 <script src="/comun.js"></script>
 <script src="/nube.js"></script>
 <script src="/pdf.js"></script>
+<script src="/planos/3d.js"></script>
 <script>
 "use strict";
 if(!Nube.requerir())throw new Error("Hay que iniciar sesión");
@@ -224,10 +239,16 @@ const CIRC=[
 const T={
   enchufe:{n:"Enchufe",g:"Enchufes"}, doble:{n:"Enchufe doble",g:"Enchufes"}, estanco:{n:"Enchufe estanco",g:"Enchufes"},
   usb:{n:"Enchufe USB",g:"Enchufes"}, encimera:{n:"Enchufe encimera",g:"Enchufes"},
+  triple:{n:"Enchufe triple",g:"Enchufes"}, suelo:{n:"Enchufe de suelo",g:"Enchufes"}, sai:{n:"Enchufe SAI",g:"Enchufes"},
+  t25:{n:"Toma 25 A (cocina)",g:"Enchufes"}, tri:{n:"Toma trifásica",g:"Enchufes"},
   luz:{n:"Punto de luz",g:"Iluminación"}, luzc:{n:"Luz conmutada",g:"Iluminación"}, aplique:{n:"Aplique",g:"Iluminación"},
   foco:{n:"Foco empotrado",g:"Iluminación"}, led:{n:"Tira LED",g:"Iluminación"}, exterior:{n:"Luz exterior",g:"Iluminación"},
+  pantalla:{n:"Pantalla / fluorescente",g:"Iluminación"}, colgante:{n:"Lámpara colgante",g:"Iluminación"},
+  emerg:{n:"Luz de emergencia",g:"Iluminación"}, proyector:{n:"Proyector",g:"Iluminación"}, baliza:{n:"Baliza de jardín",g:"Iluminación"},
   inter:{n:"Interruptor",g:"Mandos"}, conm:{n:"Conmutador",g:"Mandos"}, cruce:{n:"Cruzamiento",g:"Mandos"},
   puls:{n:"Pulsador",g:"Mandos"}, pir:{n:"Detector movimiento",g:"Mandos"}, persiana:{n:"Mando persiana",g:"Mandos"}, timbre:{n:"Timbre",g:"Mandos"},
+  inter2:{n:"Interruptor doble",g:"Mandos"}, regulador:{n:"Regulador (dimmer)",g:"Mandos"}, interest:{n:"Interruptor estanco",g:"Mandos"},
+  piloto:{n:"Interruptor con piloto",g:"Mandos"}, termostato:{n:"Termostato",g:"Mandos"},
   cuadro:{n:"Cuadro eléctrico",g:"Cuadro y líneas",box:"CUADRO",c:C.azul,fill:1,w:.7},
   horno:{n:"Línea horno",g:"Cuadro y líneas",box:"HORNO",c:C.rojo}, vitro:{n:"Línea vitro",g:"Cuadro y líneas",box:"VITRO",c:C.rojo},
   lavadora:{n:"Línea lavadora",g:"Cuadro y líneas",box:"LAVADORA",c:C.morado}, lavavaj:{n:"Línea lavavajillas",g:"Cuadro y líneas",box:"LAVAVAJ.",c:C.morado},
@@ -235,15 +256,37 @@ const T={
   aa:{n:"Línea aire",g:"Cuadro y líneas",box:"A/A",c:C.verde}, extractor:{n:"Extractor",g:"Cuadro y líneas",box:"EXTRAC.",c:C.gris},
   ve:{n:"Cargador coche",g:"Cuadro y líneas",box:"CARGADOR VE",c:C.verde}, linea:{n:"Línea (otra)",g:"Cuadro y líneas",box:"LÍNEA",c:C.gris},
   subida:{n:"Subida a planta",g:"Cuadro y líneas",box:"↑ PLANTA",c:C.azul},
-  tv:{n:"Toma TV",g:"Telecom y seguridad",box:"TV",c:C.amar}, rj45:{n:"Toma red RJ45",g:"Telecom y seguridad",box:"RJ45",c:C.amar},
-  ap:{n:"Punto WiFi",g:"Telecom y seguridad"}, router:{n:"Router",g:"Telecom y seguridad",box:"ROUTER",c:C.amar},
-  starlink:{n:"Antena Starlink",g:"Telecom y seguridad"}, rack:{n:"Rack",g:"Telecom y seguridad",box:"RACK",c:C.azul,fill:1},
-  camara:{n:"Cámara",g:"Telecom y seguridad"}, ptel:{n:"Portero / videoportero",g:"Telecom y seguridad",box:"PORTERO",c:C.gris},
+  cgp:{n:"Caja general (CGP)",g:"Cuadro y líneas",box:"CGP",c:C.azul}, contador:{n:"Contador",g:"Cuadro y líneas",box:"CONTADOR",c:C.azul},
+  subcuadro:{n:"Subcuadro",g:"Cuadro y líneas",box:"SUBCUADRO",c:C.azul,fill:1}, caja:{n:"Caja de registro",g:"Cuadro y líneas"},
+  tierra:{n:"Toma de tierra",g:"Cuadro y líneas"}, frigo:{n:"Línea frigorífico",g:"Cuadro y líneas",box:"FRIGO",c:C.morado},
+  bomba:{n:"Bomba (piscina/pozo)",g:"Cuadro y líneas",box:"BOMBA",c:C.teal},
+  split:{n:"Split A/A interior",g:"Clima y energía"}, exterior_aa:{n:"Unidad exterior A/A",g:"Clima y energía",box:"U. EXT.",c:C.verde},
+  radiador:{n:"Radiador eléctrico",g:"Clima y energía"}, toallero:{n:"Toallero",g:"Clima y energía",box:"TOALLERO",c:C.verde},
+  aero:{n:"Aerotermia",g:"Clima y energía",box:"AEROTERMIA",c:C.verde}, caldera:{n:"Caldera",g:"Clima y energía",box:"CALDERA",c:C.verde},
+  placas:{n:"Placas solares",g:"Clima y energía"}, inversor:{n:"Inversor solar",g:"Clima y energía",box:"INVERSOR",c:C.amar},
+  bateria:{n:"Batería",g:"Clima y energía",box:"BATERÍA",c:C.amar},
+  tv:{n:"Toma TV",g:"Telecom y redes",box:"TV",c:C.amar}, rj45:{n:"Toma red RJ45",g:"Telecom y redes",box:"RJ45",c:C.amar},
+  tf:{n:"Toma teléfono",g:"Telecom y redes",box:"TF",c:C.amar}, ptro:{n:"Toma fibra (PTRO)",g:"Telecom y redes",box:"PTRO",c:C.amar},
+  ap:{n:"Punto WiFi",g:"Telecom y redes"}, router:{n:"Router",g:"Telecom y redes",box:"ROUTER",c:C.amar},
+  switch:{n:"Switch",g:"Telecom y redes",box:"SWITCH",c:C.amar}, pau:{n:"PAU / registro (RTR)",g:"Telecom y redes",box:"PAU",c:C.amar},
+  antena:{n:"Antena TV",g:"Telecom y redes"}, starlink:{n:"Antena Starlink",g:"Telecom y redes"},
+  rack:{n:"Rack",g:"Telecom y redes",box:"RACK",c:C.azul,fill:1}, altavoz:{n:"Altavoz",g:"Telecom y redes"},
+  camara:{n:"Cámara",g:"Seguridad e incendios"}, domo:{n:"Cámara domo",g:"Seguridad e incendios"},
+  nvr:{n:"Grabador (NVR)",g:"Seguridad e incendios",box:"NVR",c:C.rojo},
+  ptel:{n:"Portero / videoportero",g:"Seguridad e incendios",box:"PORTERO",c:C.gris},
+  abrep:{n:"Abrepuertas",g:"Seguridad e incendios",box:"ABREP.",c:C.gris}, lector:{n:"Lector de acceso",g:"Seguridad e incendios",box:"LECTOR",c:C.gris},
+  alarma:{n:"Central de alarma",g:"Seguridad e incendios",box:"ALARMA",c:C.rojo,fill:1}, teclado:{n:"Teclado alarma",g:"Seguridad e incendios",box:"TECLADO",c:C.rojo},
+  sirena:{n:"Sirena",g:"Seguridad e incendios"}, magnetico:{n:"Contacto magnético",g:"Seguridad e incendios"},
+  humo:{n:"Detector de humo",g:"Seguridad e incendios"}, gas:{n:"Detector de gas",g:"Seguridad e incendios"},
+  inund:{n:"Detector de inundación",g:"Seguridad e incendios"}, pulsinc:{n:"Pulsador de incendios",g:"Seguridad e incendios"},
+  extintor:{n:"Extintor",g:"Seguridad e incendios"},
   puerta:{n:"Puerta",g:"Arquitectura",w:.8}, corredera:{n:"Puerta corredera",g:"Arquitectura",w:.8}, ventana:{n:"Ventana",g:"Arquitectura",w:1.2},
+  puerta2:{n:"Puerta doble",g:"Arquitectura",w:1.4}, hueco:{n:"Hueco de paso",g:"Arquitectura",w:.9}, pilar:{n:"Pilar",g:"Arquitectura",w:.3},
   escalera:{n:"Escalera",g:"Arquitectura",w:1}, texto:{n:"Texto",g:"Arquitectura"}
 };
-const GRUPOS=["Enchufes","Iluminación","Mandos","Cuadro y líneas","Telecom y seguridad","Arquitectura"];
-const NO_CUENTA={texto:1,puerta:1,corredera:1,ventana:1,escalera:1};
+const GRUPOS=["Enchufes","Iluminación","Mandos","Cuadro y líneas","Clima y energía","Telecom y redes","Seguridad e incendios","Arquitectura"];
+const NO_CUENTA={texto:1,puerta:1,corredera:1,ventana:1,escalera:1,puerta2:1,hueco:1,pilar:1};
+const HUECOS={puerta:1,corredera:1,ventana:1,puerta2:1,hueco:1};
 
 // ---------- Estado ----------
 let db={proy:[],cur:null}, hist=[], rehacer=[];
@@ -321,8 +364,50 @@ function simb(it){
     case"escalera":{const w=it.w||d.w,n=8,lng=2.4;let s=`<rect x="${-w/2}" y="${-lng/2}" width="${w}" height="${lng}" fill="#fff" stroke="${C.gris}" stroke-width=".02"/>`;for(let i=1;i<n;i++){const y=-lng/2+i*lng/n;s+=L(-w/2,y,w/2,y,C.gris,.015)}return s+L(0,lng/2-.1,0,-lng/2+.15,C.azul,.02)+`<path d="M-.07 ${-lng/2+.25} L0 ${-lng/2+.12} L.07 ${-lng/2+.25}" fill="none" stroke="${C.azul}" stroke-width=".02"/>`}
     case"texto":{const s=it.s||.28;return Tx(0,0,s,it.txt||"Texto",C.azul,700)+(it.sub?Tx(0,s*.95,s*.6,it.sub,C.gris,500):"")}
   }
+  const ex=simbExtra(t,it,{L,Ci,Tx,pins,X,tick,sw,d});if(ex)return ex;
   if(d.box){const txt=it.txt||d.box,w=Math.max(d.w||0,.13+txt.length*.085);return `<rect x="${-w/2}" y="-.12" width="${w}" height=".24" rx=".04" fill="${d.fill?d.c:"#fff"}" stroke="${d.c}" stroke-width="${sw}"/>`+Tx(0,.005,.115,txt,d.fill?"#fff":d.c)}
   return Ci(0,0,.15,C.gris);
+}
+// Símbolos añadidos (catálogo ampliado)
+function simbExtra(t,it,k){const {L,Ci,Tx,pins,X,tick,sw,d}=k;
+  const R=(x,y,w,h,c,f,rx)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx??.03}" fill="${f||"#fff"}" stroke="${c}" stroke-width="${sw}"/>`;
+  switch(t){
+    case"triple":return [-.26,0,.26].map(x=>Ci(x,0,.13,C.acento)+pins(x,C.acento)).join("");
+    case"suelo":return R(-.17,-.17,.34,.34,C.acento,"#E3F0FC")+Ci(0,0,.11,C.acento)+pins(0,C.acento);
+    case"sai":return Ci(0,0,.15,C.rojo,"#FDECEC")+pins(0,C.rojo)+Tx(0,.26,.09,"SAI",C.rojo);
+    case"t25":return Ci(0,0,.16,C.rojo)+pins(0,C.rojo)+L(0,.06,0,.12,C.rojo)+Tx(0,.28,.09,"25 A",C.rojo);
+    case"tri":return Ci(0,0,.16,C.rojo)+L(-.06,-.06,-.06,.06,C.rojo)+L(.06,-.06,.06,.06,C.rojo)+L(0,-.09,0,.09,C.rojo)+Tx(0,.28,.09,"III",C.rojo);
+    case"pantalla":return R(-.34,-.07,.68,.14,C.nar,"#FFF3E6",.02)+L(-.27,0,.27,0,C.nar);
+    case"colgante":return L(0,-.24,0,-.14,C.nar)+Ci(0,0,.14,C.nar)+X(.14,C.nar);
+    case"emerg":return R(-.2,-.1,.4,.2,C.verde,"#E3F4EA")+`<path d="M-.07 .05 L0 -.05 L.07 .05 Z" fill="${C.verde}"/>`;
+    case"proyector":return `<path d="M-.16 -.12 L.16 -.16 L.16 .16 L-.16 .12 Z" fill="#FFF3E6" stroke="${C.nar}" stroke-width="${sw}"/>`+L(.2,-.1,.27,-.14,C.nar)+L(.2,0,.28,0,C.nar)+L(.2,.1,.27,.14,C.nar);
+    case"baliza":return Ci(0,0,.1,C.nar,"#FFF3E6")+X(.1,C.nar)+L(0,.1,0,.24,C.nar)+L(-.08,.24,.08,.24,C.nar);
+    case"inter2":return `<circle r=".05" fill="${C.verde}"/>`+tick(1,C.verde)+`<g transform="rotate(-25)">${tick(1,C.verde)}</g>`;
+    case"regulador":return `<circle r=".05" fill="${C.verde}"/>`+tick(1,C.verde)+`<path d="M-.16 .16 L.16 .16 L.16 .04 Z" fill="${C.verde}" opacity=".7"/>`;
+    case"interest":return `<circle r=".05" fill="${C.teal}"/>`+tick(1,C.teal)+Tx(0,.2,.09,"IP",C.teal);
+    case"piloto":return `<circle r=".05" fill="${C.verde}"/>`+tick(1,C.verde)+`<circle r=".11" fill="none" stroke="${C.nar}" stroke-width=".02" stroke-dasharray=".03 .025"/>`;
+    case"termostato":return R(-.14,-.14,.28,.28,C.verde)+Tx(0,0,.11,"T",C.verde,800);
+    case"caja":return R(-.12,-.12,.24,.24,C.gris)+L(-.12,-.12,.12,.12,C.gris,.016)+L(-.12,.12,.12,-.12,C.gris,.016);
+    case"tierra":return L(0,-.18,0,0,C.verde)+L(-.15,0,.15,0,C.verde)+L(-.1,.06,.1,.06,C.verde)+L(-.05,.12,.05,.12,C.verde);
+    case"split":return R(-.34,-.1,.68,.2,C.verde,"#E3F4EA",.05)+L(-.26,.04,.26,.04,C.verde,.016)+Tx(0,-.02,.07,"A/A",C.verde);
+    case"radiador":{let r=R(-.3,-.1,.6,.2,C.rojo,"#FDECEC",.02);for(let x=-.2;x<.25;x+=.1)r+=L(x,-.1,x,.1,C.rojo,.016);return r}
+    case"placas":{let r=R(-.32,-.2,.64,.4,C.amar,"#FFF8E1",.01);for(const x of[-.107,.107])r+=L(x,-.2,x,.2,C.amar,.016);return r+L(-.32,0,.32,0,C.amar,.016)}
+    case"antena":return L(0,.2,0,-.18,C.amar)+L(-.16,-.12,.16,-.12,C.amar)+L(-.12,-.04,.12,-.04,C.amar)+L(-.08,.04,.08,.04,C.amar);
+    case"altavoz":return `<path d="M-.14 -.06 L-.05 -.06 L.06 -.15 L.06 .15 L-.05 .06 L-.14 .06 Z" fill="#FFF8E1" stroke="${C.amar}" stroke-width="${sw}" stroke-linejoin="round"/>`+`<path d="M.11 -.07 Q.17 0 .11 .07" fill="none" stroke="${C.amar}" stroke-width=".022"/>`;
+    case"domo":return Ci(0,0,.16,C.rojo,"#FDECEC")+`<circle r=".07" fill="${C.rojo}"/><circle r=".025" fill="#fff"/>`;
+    case"sirena":return `<path d="M-.16 .1 L-.16 -.02 Q-.16 -.16 0 -.16 Q.16 -.16 .16 -.02 L.16 .1 Z" fill="#FDECEC" stroke="${C.rojo}" stroke-width="${sw}"/>`+L(-.2,.1,.2,.1,C.rojo)+Tx(0,-.02,.08,"S",C.rojo,800);
+    case"magnetico":return R(-.18,-.06,.16,.12,C.rojo,"#FDECEC",.01)+R(.02,-.06,.16,.12,C.rojo,"#FDECEC",.01);
+    case"humo":return Ci(0,0,.16,C.rojo,"#FDECEC")+Tx(0,0,.09,"DH",C.rojo,800);
+    case"gas":return Ci(0,0,.16,C.nar,"#FFF3E6")+Tx(0,0,.09,"DG",C.nar,800);
+    case"inund":return Ci(0,0,.16,C.acento,"#E3F0FC")+Tx(0,0,.09,"DI",C.acento,800);
+    case"pulsinc":return R(-.15,-.15,.3,.3,C.rojo,C.rojo,.02)+`<circle r=".08" fill="#fff"/>`;
+    case"extintor":return `<rect x="-.08" y="-.12" width=".16" height=".3" rx=".07" fill="${C.rojo}"/>`+L(-.03,-.17,.1,-.17,C.rojo,.04)+L(0,-.17,0,-.12,C.rojo,.04);
+    case"pilar":{const w=it.w||d.w;return `<rect x="${-w/2}" y="${-w/2}" width="${w}" height="${w}" fill="${C.azul}"/>`}
+    case"hueco":{const w=it.w||d.w,h=w/2;return `<rect x="${-h}" y="-.075" width="${w}" height=".15" fill="#fff"/>`+L(-h,-.07,-h,.07,C.azul,.03)+L(h,-.07,h,.07,C.azul,.03)+L(-h,0,h,0,C.gris,.012)}
+    case"puerta2":{const w=it.w||d.w,h=w/2,q=w/2;return `<rect x="${-h}" y="-.075" width="${w}" height=".15" fill="#fff"/>`+L(-h,0,-h,-q,C.azul,.025)+L(h,0,h,-q,C.azul,.025)+
+      `<path d="M${-h} ${-q} A${q} ${q} 0 0 1 0 0 M${h} ${-q} A${q} ${q} 0 0 0 0 0" fill="none" stroke="${C.gris}" stroke-width=".015" stroke-dasharray=".05 .04"/>`+L(-h,-.07,-h,.07,C.azul,.03)+L(h,-.07,h,.07,C.azul,.03)}
+  }
+  return "";
 }
 function itemSVG(it,conSel){
   const tr=`translate(${it.x} ${it.y}) rotate(${it.r||0})${it.f?" scale(-1 1)":""}`;
@@ -493,8 +578,8 @@ svg.addEventListener("pointermove",e=>{
       else aviso(fmt(Math.hypot(temp.x2-temp.x1,temp.y2-temp.y1))+" m");
       dibujar();break}
     case"item":{const it=acc.it;let x=w.x+acc.dx,y=w.y+acc.dy;
-      if(["puerta","corredera","ventana","enchufe","doble","estanco","usb","encimera","inter","conm","cruce","puls","persiana","aplique","tv","rj45"].includes(it.t)){
-        const q=paredCercana({x,y});if(q&&["puerta","corredera","ventana"].includes(it.t)){x=q.x;y=q.y;it.r=Math.round(q.a)}}
+      if(HUECOS[it.t]||["enchufe","doble","estanco","usb","encimera","inter","conm","cruce","puls","persiana","aplique","tv","rj45"].includes(it.t)){
+        const q=paredCercana({x,y});if(q&&HUECOS[it.t]){x=q.x;y=q.y;it.r=Math.round(q.a)}}
       it.x=r2(rej(x));it.y=r2(rej(y));dibujar();break}
     case"linea":{const o=acc.o,dx=rej(w.x-acc.w0.x),dy=rej(w.y-acc.w0.y);
       o.x1=r2(acc.orig.x1+dx);o.y1=r2(acc.orig.y1+dy);o.x2=r2(acc.orig.x2+dx);o.y2=r2(acc.orig.y2+dy);dibujar();break}
@@ -520,7 +605,7 @@ async function soltar(e){
     if(herr==="texto"){const t=await pedir("Texto (por ejemplo: Cocina, Baño, Dormitorio 1)");if(!t)return;cambio();
       const it={id:uid(),t:"texto",x:r2(rej(w.x)),y:r2(rej(w.y)),r:0,txt:t};pl.items.push(it);sel={k:"i",id:it.id};fin();panel();return}
     if(colocar){cambio();let x=r2(rej(w.x)),y=r2(rej(w.y)),r=0;
-      if(["puerta","corredera","ventana"].includes(colocar)){const q=paredCercana(w);if(q){x=r2(q.x);y=r2(q.y);r=Math.round(q.a)}}
+      if(HUECOS[colocar]){const q=paredCercana(w);if(q){x=r2(q.x);y=r2(q.y);r=Math.round(q.a)}}
       const it={id:uid(),t:colocar,x,y,r};if(T[colocar].w&&colocar!=="cuadro")it.w=T[colocar].w;
       pl.items.push(it);sel={k:"i",id:it.id};fin();panel();
       aviso(T[colocar].n+" añadido · toca otra vez para poner más",1800);return}
@@ -554,7 +639,7 @@ function setHerr(h,col){herr=h;colocar=col||null;medirA=null;
 function abrir(id){$(id).classList.add("on");$(id).firstElementChild.scrollTop=0}
 document.querySelectorAll(".velo:not(#vDlg)").forEach(v=>v.addEventListener("click",e=>{if(e.target===v||e.target.closest("[data-cerrar]"))v.classList.remove("on")}));
 function mini(t){const it={t,x:0,y:0,r:0,w:T[t].w?Math.min(T[t].w,.9):undefined,txt:t==="texto"?"Abc":undefined,s:.3};
-  const vb=t==="escalera"?"-1.3 -1.3 2.6 2.6":["puerta","corredera","ventana"].includes(t)?"-.65 -.85 1.3 1":"-.45 -.35 .9 .7";
+  const vb=t==="escalera"?"-1.3 -1.3 2.6 2.6":["puerta","corredera","ventana","puerta2","hueco"].includes(t)?(t==="puerta2"?"-.8 -.85 1.6 1":"-.65 -.85 1.3 1"):["triple","pantalla","split","placas","radiador"].includes(t)?"-.45 -.3 .9 .6":"-.45 -.35 .9 .7";
   return `<svg viewBox="${vb}">${simb(it)}</svg>`}
 function paleta(){let h="";
   for(const g of GRUPOS){h+=`<h3>${g}</h3><div class="rej">`;
@@ -758,6 +843,7 @@ $("fImp").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=
   for(const pl of p.plantas)if(pl.fondo&&pl.fondo.data){const b=await (await fetch(pl.fondo.data)).blob();pl.fondo.img="img-"+uid();try{await IDB.set(pl.fondo.img,b)}catch(e){}Nube.subirFoto(pl.fondo.img,b);IMG[pl.fondo.img]=URL.createObjectURL(b);delete pl.fondo.data}
   p.id=uid();db.proy.unshift(p);db.cur=p.id;hist=[];rehacer=[];botonesHist();guardar();$("vExp").classList.remove("on");ajustar();aviso("Plano abierto: "+p.nombre,2000)}catch(err){await avisar("Ese archivo no es una copia de planos de esta app")}e.target.value=""};
 $("bExp").onclick=()=>abrir("vExp");
+$("b3d").onclick=()=>Vista3D.abrir({planta:PL(),T,simbolo:simb,circuitos:CIRC,alCambiarAlto:v=>{PL().alto=v;guardar()}});
 
 // =====================================================================
 // PRESUPUESTOS
@@ -858,20 +944,22 @@ function desdePlano(pr,proy,op){
   const n={};let cables={};
   for(const pl of proy.plantas){for(const it of pl.items)n[it.t]=(n[it.t]||0)+1;for(const c of pl.cables)cables[c.c]=(cables[c.c]||0)+Math.hypot(c.x2-c.x1,c.y2-c.y1)}
   const g=k=>n[k]||0, T_=op.tubo;const add=(id,q,c)=>agregar(pr,tar(id),q,c);
-  const ptsEnch=g("enchufe")+g("doble")+g("usb")+g("encimera")+g("estanco")+g("extractor");
-  const cruces=g("cruce"), conm=Math.max(0,g("luzc")-cruces), senc=g("luz")+g("aplique")+g("exterior"), lamp=g("foco")+g("led");
+  const ptsEnch=g("enchufe")+g("doble")+g("usb")+g("encimera")+g("estanco")+g("extractor")+g("triple")+g("suelo")+g("sai");
+  const cruces=g("cruce"), conm=Math.max(0,g("luzc")-cruces), senc=g("luz")+g("aplique")+g("exterior")+g("pantalla")+g("colgante")+g("proyector")+g("baliza"), lamp=g("foco")+g("led");
   add(T_?"e_enchT":"e_ench",ptsEnch);add(T_?"e_luzT":"e_luz",senc);add(T_?"e_conmT":"e_conm",conm);add("e_cruz",cruces);add("e_lamp",lamp);
   if(op.empotrado)add("e_emp",ptsEnch+senc+conm+cruces);
   const LIN={horno:["HORNO","m_c6","m_t25"],vitro:["VITRO","m_c6","m_t25"],lavadora:["LAVADORA","m_c4","m_t20"],lavavaj:["LAVAVAJILLAS","m_c4","m_t20"],secadora:["SECADORA","m_c4","m_t20"],
-    termo:["TERMO","m_c4","m_t20"],aa:["AIRE ACONDICIONADO","m_c25","m_t20"],ve:["CARGADOR VE","m_c6","m_t25"],linea:["OTRA","m_c25","m_t20"],subida:["SUBIDA A PLANTA","m_c25","m_t20"]};
+    termo:["TERMO","m_c4","m_t20"],aa:["AIRE ACONDICIONADO","m_c25","m_t20"],t25:["TOMA 25 A","m_c6","m_t25"],tri:["TOMA TRIFÁSICA","m_c6","m_t25"],frigo:["FRIGORÍFICO","m_c25","m_t20"],bomba:["BOMBA","m_c4","m_t20"],split:["AIRE ACONDICIONADO","m_c25","m_t20"],ve:["CARGADOR VE","m_c6","m_t25"],linea:["OTRA","m_c25","m_t20"],subida:["SUBIDA A PLANTA","m_c25","m_t20"]};
   for(const k in LIN)if(g(k))add("e_linea",g(k),"Línea nueva desde el cuadro ("+LIN[k][0].toLowerCase()+")");
   if(g("cuadro"))add("e_cuadro",g("cuadro"));
-  add("red",g("rj45"));add("wifi",g("ap"));if(g("router"))add("confred",1);add("cam",g("camara"));if(g("camara"))add("nvr",1);
+  add("red",g("rj45"));add("wifi",g("ap"));if(g("router"))add("confred",1);add("cam",g("camara")+g("domo"));if(g("camara")+g("domo")&&!g("nvr"))add("nvr",1);add("nvr",g("nvr"));
   add("sl",g("starlink"));add("rack",g("rack"));
-  const sinTarifa=["pir","timbre","ptel","tv"].filter(k=>g(k)).map(k=>T[k].n.toLowerCase()+" ("+g(k)+")");
+  const CON_TARIFA=new Set(["enchufe","doble","usb","encimera","estanco","extractor","triple","suelo","sai","cruce","luzc","luz","aplique","exterior","pantalla","colgante","proyector","baliza","foco","led",
+    "inter","conm","puls","persiana","inter2","regulador","interest","piloto","rj45","ap","router","camara","domo","nvr","starlink","rack","cuadro"].concat(Object.keys(LIN)));
+  const sinTarifa=Object.keys(n).filter(k=>T[k]&&!NO_CUENTA[k]&&!CON_TARIFA.has(k)).map(k=>T[k].n.toLowerCase()+" ("+g(k)+")");
   if(op.material){
-    const schuko=g("enchufe")+g("doble")*2+g("usb")+g("encimera")+g("extractor");add(schuko>=5?"m_enchP":"m_ench",schuko);add("m_m2",g("doble"));add("m_est",g("estanco"));
-    let mandos=g("inter")+g("conm");if(!mandos)mandos=senc+conm*2;add("m_int",mandos);add("m_cruz",cruces);add("m_puls",g("puls"));add("m_pers",g("persiana"));
+    const schuko=g("enchufe")+g("doble")*2+g("usb")+g("encimera")+g("extractor")+g("triple")*3+g("suelo")+g("sai");add(schuko>=5?"m_enchP":"m_ench",schuko);add("m_m2",g("doble"));add("m_est",g("estanco"));
+    let mandos=g("inter")+g("conm")+g("inter2")+g("regulador")+g("interest")+g("piloto");if(!mandos)mandos=senc+conm*2;add("m_int",mandos);add("m_cruz",cruces);add("m_puls",g("puls"));add("m_pers",g("persiana"));
     add("m_rj45",g("rj45"));add("m_tv",g("tv"));
     // cable
     const m={m_c15:0,m_c25:0,m_c4:0,m_c6:0},tub={m_t16:0,m_t20:0,m_t25:0};
