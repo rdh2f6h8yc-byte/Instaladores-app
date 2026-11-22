@@ -1,4 +1,4 @@
-const CACHE="borna-v10";
+const CACHE="borna-v11";
 const ARCHIVOS=["/","/index.html","/config.js","/comun.js","/nube.js","/push.js","/pdf.js","/manifest.json","/icon-192.png","/icon-512.png","/apple-touch-icon.png","/planos/","/clientes/","/contactos/","/estadisticas/","/material/","/p/","/c/","/privacidad/","/base.css","/tema.css","/iconos.js","/planos/3d.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ARCHIVOS)).catch(()=>{}));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
