@@ -46,7 +46,7 @@ const HERRAMIENTA = {
 
 const SISTEMA = `Eres el ayudante de presupuestos de una empresa instaladora española (electricidad, redes, WiFi, cámaras, antenas, Starlink, telecomunicaciones).
 El instalador te describe un trabajo (dictado por voz, puede tener errores de transcripción) y a veces añade fotos de la obra.
-Tu trabajo: convertirlo en partidas de presupuesto realistas y llamar a la herramienta crear_presupuesto.
+Tu trabajo: convertirlo en partidas de presupuesto realistas y llamar SIEMPRE a la herramienta crear_presupuesto, sin escribir texto aparte.
 
 Reglas:
 - Usa SIEMPRE las partidas de la tarifa del instalador cuando encajen, con su tarifa_id exacto. No cambies sus precios (pon precio 0).
@@ -107,7 +107,8 @@ Deno.serve(async (req) => {
     type: "text",
     text: `TARIFA DEL INSTALADOR (id | grupo | concepto | precio):\n${lineasTarifa || "(sin tarifa)"}\n\n` +
       `CLIENTE: ${cuerpo.tipo === "empresa" ? "empresa" : "particular"}\n\n` +
-      `TRABAJO DESCRITO POR EL INSTALADOR:\n${texto || "(sin texto, mira las fotos)"}`,
+      `TRABAJO DESCRITO POR EL INSTALADOR:\n${texto || "(sin texto, mira las fotos)"}\n\n` +
+      `Responde únicamente llamando a la herramienta crear_presupuesto.`,
   });
 
   const ra = await fetch("https://api.anthropic.com/v1/messages", {
@@ -118,14 +119,16 @@ Deno.serve(async (req) => {
       max_tokens: 4000,
       system: SISTEMA,
       tools: [HERRAMIENTA],
-      tool_choice: { type: "tool", name: "crear_presupuesto" },
+      // Algunos modelos no admiten obligar a usar una herramienta: se pide en el mensaje y se deja en «auto»
+      tool_choice: { type: "auto" },
       messages: [{ role: "user", content: contenido }],
     }),
   });
   const j = await ra.json().catch(() => ({}));
   if (!ra.ok) {
     console.log("anthropic", ra.status, JSON.stringify(j).slice(0, 500));
-    return salir({ error: "La IA no responde ahora mismo (" + ra.status + "). Inténtalo en un momento." }, 502);
+    const motivo = (j && j.error && j.error.message) ? ": " + String(j.error.message).slice(0, 160) : "";
+    return salir({ error: "La IA no responde ahora mismo (" + ra.status + motivo + "). Inténtalo en un momento." }, 502);
   }
   const uso = (j.content || []).find((b: { type: string }) => b.type === "tool_use");
   const r = uso && uso.input;
