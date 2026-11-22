@@ -1,7 +1,8 @@
 /* Borna · tema «Obra»: negro y amarillo de señalización, como el logo.
    Se carga después de los estilos de cada página y solo cambia colores y acabados. */
-:root{--azul:#161616;--acento:#161616;--gris:#5C5A55;--claro:#EFEDE7;--fondo:#F4F2EC;--borde:#DCD9D0;--rojo:#D02B20;--nar:#B35F00;--verde:#2E8B4E;--amarillo:#FFD400}
-html,body{background:var(--fondo)}
+:root{--azul:#161616;--acento:#161616;--gris:#5C5A55;--claro:#EFEDE7;--fondo:#E3E0D8;--borde:#DCD9D0;--rojo:#D02B20;--nar:#B35F00;--verde:#2E8B4E;--amarillo:#FFD400}
+/* Fondo de hormigón: grano fino y manchas suaves (SVG generado, sin imágenes que descargar) */
+html,body{background-color:var(--fondo);background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27180%27%20height%3D%27180%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.85%27%20numOctaves%3D%273%27%20seed%3D%274%27%20stitchTiles%3D%27stitch%27/%3E%3CfeColorMatrix%20values%3D%270%200%200%200%200.09%20%200%200%200%200%200.09%20%200%200%200%200%200.08%20%200%200%200%200.18%200%27/%3E%3C/filter%3E%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20filter%3D%27url%28%23n%29%27/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.012%27%20numOctaves%3D%274%27%20seed%3D%279%27%20stitchTiles%3D%27stitch%27/%3E%3CfeColorMatrix%20values%3D%270%200%200%200%200.09%20%200%200%200%200%200.09%20%200%200%200%200%200.08%20%200%200%200%200.3%200%27/%3E%3C/filter%3E%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20filter%3D%27url%28%23n%29%27/%3E%3C/svg%3E");background-size:180px 180px,600px 600px}
 
 /* Iconos (sustituyen a los emojis) */
 .emo{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;flex:none}
