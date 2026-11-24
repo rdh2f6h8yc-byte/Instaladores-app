@@ -251,7 +251,7 @@ function buscarIni(){const q=$("buscaIni").value.trim().toLowerCase(),r=$("resBu
     :`<div class="vacio">Ningún cliente con «${esc($("buscaIni").value.trim())}».</div><a href="/clientes/?nuevo=1"><span class="ic" style="background:var(--azul);color:#fff">＋</span><span class="tx"><b>Crear cliente nuevo</b></span><span class="fl"></span></a>`}
 function pintarInicio(){
   const h=new Date().getHours(),pf=Nube.perfil()||{},adm=Nube.esAdmin(),vc=Nube.verComo();
-  $("saludo").textContent=vc?"Datos de "+vc.nombre:(h<13?"Buenos días":h<21?"Buenas tardes":"Buenas noches")+(pf.nombre?", "+pf.nombre:"");
+  $("saludo").textContent=vc?"Datos de "+vc.nombre:(h<6?"Buenas noches":h<13?"Buenos días":h<21?"Buenas tardes":"Buenas noches")+(pf.nombre?", "+pf.nombre:"");
   $("empNom").textContent=pf.empresa||PRODUCTO;$("bForm").hidden=!adm||!Nube.configurado()||!pf.empresa_id;$("bAvisos").hidden=!Nube.configurado();
   const dp=Nube.diasPrueba();$("avisoPlan").innerHTML=!Nube.activa()?`<div class="estadoAv" style="background:#FDECEC;margin-top:14px"><b>Tu periodo de prueba ha terminado.</b> Puedes ver tus datos, pero no se guardan cambios nuevos.${adm?BOT_PLANES:" Avisa a tu administrador."}</div>`
     :dp!==null&&dp<=2?`<div class="estadoAv" style="background:#FFF8EC;margin-top:14px">Te queda${dp===1?"":"n"} <b>${Math.max(dp,0)} día${dp===1?"":"s"}</b> de prueba.${adm?BOT_PLANES:""}</div>`:"";
@@ -491,10 +491,31 @@ async function pintarEquipo(){const c=$("eqCuerpo");c.innerHTML=`<p style="color
 $("bEquipo").onclick=()=>{$("vEquipo").classList.add("on");pintarEquipo()};
 $("vEquipo").addEventListener("click",e=>{if(e.target===$("vEquipo")||e.target.closest("[data-cerrar]"))$("vEquipo").classList.remove("on")});
 const conEnlace=/access_token=/.test(location.hash);
+// Enlace de un correo (confirmar cuenta, cambiar contraseña) abierto en el Safari del iPhone:
+// ofrece abrirlo en la app Borna, que es donde la persona trabaja.
+const enMovilWeb=!enApp()&&/iPhone|iPad|iPod/i.test(navigator.userAgent);
+let enlaceEnApp=false;
+if(conEnlace&&enMovilWeb&&!sessionStorage.getItem("borna-seguir-web")){
+  enlaceEnApp=true;const hash=location.hash.slice(1),rec=/type=recovery/.test(hash);
+  verAcceso(false);$("fAcceso").hidden=true;$("fAlta").hidden=true;
+  const caja=document.createElement("div");caja.id="abrirApp";
+  caja.innerHTML=`<p style="color:#fff;font-size:17px;font-weight:800;margin:0 0 8px">${rec?"Elige tu contraseña nueva":"Cuenta confirmada ✓"}</p>
+    <p style="color:rgba(255,255,255,.7);font-size:14.5px;line-height:1.45;margin:0 0 18px">${rec?"Ábrelo en la app Borna para cambiarla.":"Ya puedes entrar en la app Borna."}</p>
+    <a class="entrar" style="display:block;text-align:center;text-decoration:none;line-height:52px" href="borna://acceso#${hash}">Abrir en la app Borna</a>
+    <button type="button" id="bSeguirWeb" style="display:block;width:100%;margin-top:10px;background:none;border:0;color:rgba(255,255,255,.7);font-size:14px;font-weight:700;padding:10px">Seguir en la web</button>`;
+  $("fAcceso").after(caja);
+  $("bSeguirWeb").onclick=()=>{sessionStorage.setItem("borna-seguir-web","1");location.reload()};
+}
+// En la app: llega borna://acceso#access_token=… desde ese botón
+(()=>{try{const C=window.Capacitor;if(!enApp()||!C.registerPlugin)return;
+  C.registerPlugin("App").addListener("appUrlOpen",ev=>{const u=String(ev&&ev.url||"");if(!/^borna:\/\/acceso/.test(u)||!/access_token=/.test(u))return;
+    Nube.aplicarEnlace(u.slice(u.indexOf("#")+1)).then(tipo=>{
+      if(tipo==="recovery"){verAcceso(false);$("fAcceso").hidden=true;$("fAlta").hidden=true;$("fClave").hidden=false;return}
+      mostrar()}).catch(()=>mostrar())})}catch(e){}})();
 if(!conEnlace)mostrar();
 if(window.PushBorna)PushBorna.alEntrar();
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("/sw.js").catch(()=>{});
-if(conEnlace)Nube.aplicarEnlace().then(tipo=>{
+if(conEnlace&&!enlaceEnApp)Nube.aplicarEnlace().then(tipo=>{
   if(tipo==="recovery"){verAcceso(false);$("fAcceso").hidden=true;$("fAlta").hidden=true;$("fClave").hidden=false;return}
   mostrar();
 }).catch(()=>mostrar());
