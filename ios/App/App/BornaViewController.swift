@@ -5,6 +5,8 @@ import Capacitor
 class BornaViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(CompraApplePlugin())
+        // Volver atrás deslizando desde el borde izquierdo, como en Safari
+        webView?.allowsBackForwardNavigationGestures = true
     }
 
     /// Borna tiene varias páginas en carpetas (/clientes/, /planos/, /material/…).
