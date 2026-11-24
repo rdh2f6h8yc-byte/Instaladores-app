@@ -48,6 +48,10 @@ window.Nube = (() => {
       headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error_description || j.msg || j.error || ("Error " + r.status));
+    return trasEntrar(j);
+  }
+  // Común a correo, Apple y Google: guarda la sesión y deja el móvil listo para esa cuenta
+  async function trasEntrar(j) {
     // Si en este móvil había datos de otra cuenta, se borran (para no mezclarlos)
     sessionStorage.removeItem("almara-ver");
     const dueno = localStorage.getItem("almara-dueno");
@@ -101,13 +105,14 @@ window.Nube = (() => {
     return true;
   }
   // El enlace del correo trae la sesión en el hash (#access_token…). La guarda y dice si es un cambio de clave.
-  async function aplicarEnlace() {
-    const h = new URLSearchParams(String(location.hash || "").replace(/^#/, ""));
+  // También sirve para la vuelta de Google en la app (le llega el hash en «hashDado»).
+  async function aplicarEnlace(hashDado) {
+    const h = new URLSearchParams(String(hashDado || location.hash || "").replace(/^#/, ""));
     const at = h.get("access_token"), rt = h.get("refresh_token");
     if (!at || !rt) return "";
     const tipo = h.get("type") || "";
     const exp = Number(h.get("expires_in")) || 3600;
-    history.replaceState(null, "", location.pathname + location.search);
+    if (!hashDado) history.replaceState(null, "", location.pathname + location.search);
     const r = await pedir("/auth/v1/user", { headers: { apikey: KEY, Authorization: "Bearer " + at } });
     if (!r.ok) return "";
     const u = await r.json();
@@ -119,6 +124,42 @@ window.Nube = (() => {
     localStorage.setItem("almara-dueno", u.id);
     setSesion({ access_token: at, refresh_token: rt, expires_at: Date.now() / 1000 + exp, user: { id: u.id, email: u.email } });
     return tipo === "recovery" ? "recovery" : "sesion";
+  }
+  // ---------- Entrar con Apple o con Google ----------
+  const nativo = () => { try { const C = window.Capacitor; return !!(C && C.isNativePlatform && C.isNativePlatform()); } catch (e) { return false; } };
+  const pluginAcceso = () => { try { const C = window.Capacitor; return nativo() && C.registerPlugin ? C.registerPlugin("Acceso") : null; } catch (e) { return null; } };
+  const ESQUEMA = "borna";
+  // Solo en la app de iPhone: el botón de Apple usa la hoja nativa de iOS
+  const puedeApple = () => { try { return nativo() && window.Capacitor.getPlatform() === "ios"; } catch (e) { return false; } };
+  async function entrarConApple() {
+    const A = pluginAcceso();
+    if (!A) throw new Error("Actualiza la app para entrar con Apple");
+    const a = await A.apple();
+    const r = await pedir("/auth/v1/token?grant_type=id_token", { method: "POST",
+      headers: { apikey: KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: "apple", id_token: a.idToken, nonce: a.nonce }) }, 15000);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error_description || j.msg || j.error || ("Error " + r.status));
+    await trasEntrar(j);
+    // Apple pide poder retirar el acceso si se borra la cuenta: el servidor guarda el permiso
+    if (a.codigo) pedir("/functions/v1/acceso?accion=apple", { method: "POST", headers: await cab({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ codigo: a.codigo }) }, 15000).catch(() => {});
+    return { nombre: a.nombre || "" };
+  }
+  async function entrarConGoogle() {
+    const A = pluginAcceso();
+    const vuelta = A ? ESQUEMA + "://acceso" : location.origin + "/";
+    const url = URLB + "/auth/v1/authorize?provider=google&redirect_to=" + encodeURIComponent(vuelta);
+    if (!A) { location.href = url; return { redirigido: true }; }
+    const r = await A.web({ url, esquema: ESQUEMA });
+    const u = String((r && r.url) || "");
+    const hash = u.includes("#") ? u.slice(u.indexOf("#") + 1) : (u.split("?")[1] || "");
+    const q = new URLSearchParams(hash);
+    if (q.get("error")) throw new Error(q.get("error_description") || q.get("error"));
+    const tipo = await aplicarEnlace(hash);
+    if (!tipo) throw new Error("Google no ha devuelto la sesión");
+    await cargarPerfil().catch(() => {});
+    return {};
   }
   async function nuevaClave(password) {
     const r = await pedir("/auth/v1/user", { method: "PUT", headers: await cab({ "Content-Type": "application/json" }), body: JSON.stringify({ password }) });
@@ -176,6 +217,8 @@ window.Nube = (() => {
       const jc = await rc.json().catch(() => ({}));
       if (!rc.ok || !jc.ok) return "no_cancelada";
     }
+    // Si entró con Apple, se le retira el permiso en Apple (obligatorio al borrar la cuenta)
+    try { await pedir("/functions/v1/acceso?accion=revocar", { method: "POST", headers: await cab({ "Content-Type": "application/json" }), body: "{}" }, 15000); } catch (e) {}
     const yo = sesion().user.id, carpetas = [yo];
     if (esAdmin()) { try { (await equipo()).forEach(m => { if (!carpetas.includes(m.user_id)) carpetas.push(m.user_id); }); } catch (e) {} }
     // Las fotos se borran antes: una vez eliminada la cuenta ya no hay permiso para hacerlo
@@ -374,7 +417,7 @@ window.Nube = (() => {
     if (!r.ok) { const e = new Error(j.error || ("HTTP " + r.status)); e.codigo = j.codigo || ""; throw e; }
     return j;
   }
-  return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, recuperar, aplicarEnlace, nuevaClave, crearEmpresa, eliminarCuenta, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
+  return { perfil, cargarPerfil, esAdmin, esTecnico, sinEmpresa, deBaja, activa, diasPrueba, registrar, recuperar, aplicarEnlace, entrarConApple, entrarConGoogle, puedeApple, nuevaClave, crearEmpresa, eliminarCuenta, invitaciones, serie, ver, verComo, soloAdmin, equipo, datosEquipo, yo: () => sesion() && sesion().user.id,
     api, rpcPublica, abrirPortal, avisar, funcion, webUrl, waNum, srcImagen, configurado, sesion, entrar, salir, requerir, marcar, sincronizar, subirFoto, bajarFoto, borrarFoto, reintentarFotos,
     clientes, estado: () => est, CLAVES };
 })();

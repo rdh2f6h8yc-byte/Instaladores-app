@@ -754,3 +754,13 @@ begin
 end $$;
 revoke all on function public.registrar_apple(uuid, text, timestamptz, text) from public, anon, authenticated;
 grant execute on function public.registrar_apple(uuid, text, timestamptz, text) to service_role;
+
+-- ---------- Iniciar sesión con Apple: permiso guardado para poder retirarlo al borrar la cuenta ----------
+-- Solo lo usa la función «acceso» (con la clave de servicio). Nadie más puede leerlo.
+create table if not exists public.apple_acceso (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  refresh_token text not null,
+  actualizado timestamptz not null default now()
+);
+alter table public.apple_acceso enable row level security;
+revoke all on public.apple_acceso from anon, authenticated;
