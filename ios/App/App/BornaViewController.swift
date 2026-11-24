@@ -5,6 +5,7 @@ import Capacitor
 class BornaViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(CompraApplePlugin())
+        bridge?.registerPluginInstance(AccesoPlugin())
         // Volver atrás deslizando desde el borde izquierdo, como en Safari
         webView?.allowsBackForwardNavigationGestures = true
     }
